@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import HomePage from '../pages/HomePage.vue'
+import ChatPage from '../pages/ChatPage.vue'
 import AboutPage from '../pages/AboutPage.vue'
 import PanduanPage from '../pages/PanduanPage.vue'
 import PanduanDetailPage from '../pages/PanduanDetailPage.vue'
@@ -12,12 +13,14 @@ import ContactPage from '../pages/ContactPage.vue'
 // melempar 404. Dengan hash, semua rute tetap jalan tanpa setting server.
 const routes = [
   { path: '/', name: 'home', component: HomePage, meta: { title: 'Beranda' } },
+  { path: '/chat', name: 'chat', component: ChatPage, meta: { title: 'Chat Konsultasi', tanpaFooter: true } },
   { path: '/tentang', name: 'tentang', component: AboutPage, meta: { title: 'Tentang' } },
   { path: '/panduan', name: 'panduan', component: PanduanPage, meta: { title: 'Panduan Faraid' } },
   {
     path: '/panduan/:id',
     name: 'panduan-detail',
     component: PanduanDetailPage,
+    props: true,
     meta: { title: 'Detail Panduan' },
   },
   { path: '/kontak', name: 'kontak', component: ContactPage, meta: { title: 'Kontak' } },

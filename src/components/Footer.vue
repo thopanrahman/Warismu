@@ -36,6 +36,7 @@ const tahun = new Date().getFullYear()
         <h3 class="font-display font-bold mb-3 text-white">Navigasi</h3>
         <ul class="space-y-2 text-sm">
           <li><RouterLink to="/" class="hover:text-waris-200 transition"><i class="fa-solid fa-house mr-2 text-xs"></i>Beranda</RouterLink></li>
+          <li><RouterLink to="/chat" class="hover:text-waris-200 transition"><i class="fa-solid fa-comments mr-2 text-xs"></i>Chat Konsultasi</RouterLink></li>
           <li><RouterLink to="/tentang" class="hover:text-waris-200 transition"><i class="fa-solid fa-circle-info mr-2 text-xs"></i>Tentang</RouterLink></li>
           <li><RouterLink to="/panduan" class="hover:text-waris-200 transition"><i class="fa-solid fa-book-open mr-2 text-xs"></i>Panduan Faraid</RouterLink></li>
           <li><RouterLink to="/kontak" class="hover:text-waris-200 transition"><i class="fa-solid fa-envelope mr-2 text-xs"></i>Kontak</RouterLink></li>

@@ -68,6 +68,25 @@ const batasan = [
     </section>
 
     <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
+      <div class="bg-cream rounded-[2rem] border border-waris-900/10 p-8 shadow-soft">
+        <span class="text-xs font-extrabold tracking-widest text-waris-900 uppercase">
+          <i class="fa-solid fa-coins mr-1.5"></i>Model Bisnis Freemium
+        </span>
+        <h2 class="font-display font-bold text-3xl mt-3 text-ink">Gratis Simulasi, Bayar Seikhlasnya untuk Ahli</h2>
+        <div class="grid gap-8 sm:grid-cols-2 mt-6">
+          <div class="bg-waris-50 rounded-[1.5rem] p-6 border border-waris-900/10">
+            <p class="font-display font-bold text-lg text-ink"><i class="fa-solid fa-gift mr-2 text-waris-900"></i>Gratis Selamanya</p>
+            <p class="text-sm text-ink/60 mt-2">Simulasi chatbot, seluruh artikel panduan, dan mode tamu tanpa login — tanpa batas, tanpa paywall.</p>
+          </div>
+          <div class="bg-waris-950 text-white rounded-[1.5rem] p-6">
+            <p class="font-display font-bold text-lg"><i class="fa-solid fa-user-tie mr-2 text-waris-300"></i>Konsultasi Ahli — Rp30rb/30 mnt</p>
+            <p class="text-sm text-waris-50/75 mt-2">Untuk kasus syawadz (kompleks): sesi video dengan ahli faraid tersertifikasi. WarisMu mendeteksi & mengarahkan otomatis.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
       <div class="bg-cream rounded-[2rem] border border-waris-900/10 p-8 shadow-soft grid gap-10 lg:grid-cols-2 items-center">
         <div>
           <span class="text-xs font-extrabold tracking-widest text-waris-900 uppercase">

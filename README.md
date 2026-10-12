@@ -11,20 +11,28 @@
 
 ## ✨ Fitur
 
-- **Hero + CTA** — pengantar konsep WarisMu di Beranda
+- **Chatbot konsultasi `/chat`** (fitur inti SRS, ala DeepSeek) — sidebar riwayat + bubble user/bot + typing indicator + suggestion chips + mock simulasi faraid + sumber + disclaimer + tombol Laporkan (FR-01 s/d FR-20)
+- **Hero + CTA "Mulai Konsultasi"** — pengantar konsep WarisMu di Beranda
 - **Modal "Apa itu Faraid?"** — popup edukasi (interaktif #1)
 - **Perpustakaan panduan faraid** — 8 artikel via `v-for` + **pencarian & filter kategori** (interaktif #2, `computed`)
 - **Detail artikel** — dynamic route `/panduan/:id` + artikel terkait
 - **Form kontak bervalidasi** — nama, email, pesan + state sukses (interaktif #3)
-- **Navbar responsif** — menu hamburger di mobile (interaktif #4)
+- **Navbar responsif** — menu hamburger di mobile (interaktif #4) + link Chat ter-highlight
 - **Transisi fade** antar halaman + animasi modal
+- **Footer disembunyikan di `/chat`** agar ruang percakapan penuh
+
+## 🎨 Tema: hijau organik natural
+
+Palet utama `#1d8757` + skala tint (`tailwind.config.js` → `waris-50…950`),
+font **Fraunces** (heading) + **Nunito** (body), tekstur grain kertas global,
+blob organik, tombol pill, shadow bernuansa hijau — bukan hitam.
 
 ## 🛠️ Teknologi
 
 | Teknologi | Versi / Keterangan |
 |---|---|
 | Vue 3 Composition API (`<script setup>`) | ^3.5 |
-| Vue Router | ^4 (5 rute) |
+| Vue Router | ^4 (6 rute) |
 | Tailwind CSS | ^3 (CDN tidak dipakai — via npm + PostCSS) |
 | Font Awesome | free (ikon `fa-scale-balanced` dkk.) |
 | Gambar | Unsplash (hotlink) |
@@ -92,23 +100,26 @@ warismu/
     ├── main.js                  # entry: Vue + Router + FontAwesome + CSS
     ├── App.vue                  # layout: Navbar + router-view (fade) + Footer
     ├── assets/                  # aset gambar lokal (opsional)
-    ├── components/              # 8 komponen terpisah ✅
-    │   ├── Navbar.vue           # header + menu mobile toggle
+    ├── components/              # 10 komponen terpisah ✅
+    │   ├── Navbar.vue           # header + menu mobile toggle + Chat highlight
     │   ├── Footer.vue           # footer + disclaimer
-    │   ├── HeroSection.vue      # hero Beranda
-    │   ├── FeatureCard.vue      # kartu fitur (props)
-    │   ├── HowItWorks.vue       # 3 langkah cara kerja
+    │   ├── HeroSection.vue      # hero Beranda (CTA → /chat)
+    │   ├── FeatureCard.vue      # kartu fitur (props + radius organik)
+    │   ├── HowItWorks.vue       # 3 langkah cara kerja + konektor SVG
     │   ├── ArticleCard.vue      # kartu artikel (props)
     │   ├── ContactForm.vue      # form + validasi + state sukses
-    │   └── InfoModal.vue        # modal "Apa itu Faraid?"
-    ├── pages/                   # 5 halaman (routes) ✅
+    │   ├── InfoModal.vue        # modal "Apa itu Faraid?"
+    │   ├── ChatBubble.vue       # bubble user/bot + hasil + sumber + disclaimer + Laporkan
+    │   └── ChatSidebar.vue      # sidebar riwayat ala DeepSeek + kartu user
+    ├── pages/                   # 6 halaman (routes) ✅
     │   ├── HomePage.vue         # /
-    │   ├── AboutPage.vue        # /tentang
+    │   ├── ChatPage.vue         # /chat (fitur inti SRS — mock, backend LLM nanti)
+    │   ├── AboutPage.vue        # /tentang (+ model bisnis freemium)
     │   ├── PanduanPage.vue      # /panduan (list + search + filter)
     │   ├── PanduanDetailPage.vue# /panduan/:id (dynamic route)
     │   └── ContactPage.vue      # /kontak (form)
     ├── router/
-    │   └── index.js             # definisi 5 rute + judul tab dinamis
+    │   └── index.js             # definisi 6 rute + judul tab dinamis
     ├── data/
     │   └── panduan.js           # mock 8 artikel + daftar kategori
     └── styles/
@@ -119,8 +130,9 @@ warismu/
 
 | Rute | Halaman | Keterangan |
 |---|---|---|
-| `/` | HomePage | Hero + statistik + fitur + cara kerja + artikel unggulan + CTA |
-| `/tentang` | AboutPage | Profil, visi, misi, latar belakang, tipe user, batasan produk |
+| `/` | HomePage | Hero + statistik + 3 fitur + cara kerja + artikel unggulan + CTA ke /chat |
+| `/chat` | ChatPage | Chatbot mock SRS (sidebar + bubble + typing + chips + simulasi + Laporkan) |
+| `/tentang` | AboutPage | Profil, visi, misi, latar belakang, tipe user, freemium, batasan produk |
 | `/panduan` | PanduanPage | Galeri artikel (`v-for`) + search + filter kategori |
 | `/panduan/:id` | PanduanDetailPage | Detail artikel + poin penting + sumber + disclaimer |
 | `/kontak` | ContactPage | Info kanal + form bervalidasi |

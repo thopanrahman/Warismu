@@ -13,10 +13,9 @@ const modalTerbuka = ref(false)
 
 // warna ikon kartu fitur dipetakan ke tint hijau waris + aksen senada
 const fitur = [
-  { ikon: 'fa-solid fa-comments', judul: 'Chatbot Bahasa Natural', deskripsi: 'Cukup bercerita seperti mengobrol — sistem mengekstraksi data keluarga otomatis.', tint: 'bg-waris-900', indeks: 0 },
-  { ikon: 'fa-solid fa-calculator', judul: 'Simulasi Faraid Instan', deskripsi: 'Hasil tabel bagian tiap ahli waris lengkap dengan dalil dan penjelasan.', tint: 'bg-waris-800', indeks: 1 },
-  { ikon: 'fa-solid fa-book-quran', judul: 'Edukasi Berbasis Dalil', deskripsi: 'Setiap hasil disertai sumber QS. An-Nisa & Kompilasi Hukum Islam (KHI).', tint: 'bg-waris-700', indeks: 2 },
-  { ikon: 'fa-solid fa-user-shield', judul: 'Mode Guest & Akun', deskripsi: 'Coba tanpa login (riwayat hilang saat browser ditutup) atau daftar untuk simpan riwayat.', tint: 'bg-waris-600', indeks: 3 },
+  { ikon: 'fa-solid fa-comments', judul: 'Simulasi Faraid', deskripsi: 'Ceritakan kondisi keluarga — sistem mengekstraksi data & menghitung porsi tiap ahli waris.', tint: 'bg-waris-900', indeks: 0 },
+  { ikon: 'fa-solid fa-circle-question', judul: 'Penjelasan AI', deskripsi: 'Setiap hasil disertai penjelasan, dalil QS. An-Nisa, KHI, disclaimer & tombol Laporkan.', tint: 'bg-waris-800', indeks: 1 },
+  { ikon: 'fa-solid fa-book-quran', judul: 'Belajar Hukum', deskripsi: 'Perpustakaan 8 artikel faraid: ashabul furudh, ashabah, hijab, aul & radd, hingga ikhtilaf.', tint: 'bg-waris-700', indeks: 2 },
 ]
 
 const artikelUnggulan = daftarPanduan.slice(0, 3)
@@ -52,7 +51,7 @@ const artikelUnggulan = daftarPanduan.slice(0, 3)
         <h2 class="font-display text-4xl sm:text-5xl font-bold mt-3 text-ink">Kenapa Memilih WarisMu?</h2>
         <p class="text-ink/60 mt-3">Pendekatan conversational yang ramah untuk topik yang sensitif.</p>
       </div>
-      <div class="relative grid gap-8 sm:grid-cols-2 lg:grid-cols-4 mt-12">
+      <div class="relative grid gap-8 sm:grid-cols-2 lg:grid-cols-3 mt-12">
         <FeatureCard
           v-for="f in fitur"
           :key="f.judul"
@@ -95,11 +94,11 @@ const artikelUnggulan = daftarPanduan.slice(0, 3)
           Jelajahi panduan faraid atau hubungi kami — gratis, tanpa login, dan berbasis dalil.
         </p>
         <div class="mt-8 flex flex-wrap justify-center gap-3 relative">
-          <RouterLink to="/panduan" class="h-12 inline-flex items-center px-8 rounded-full bg-white text-waris-900 font-extrabold hover:scale-105 active:scale-95 transition-all duration-300">
-            <i class="fa-solid fa-book-open mr-1.5"></i>Buka Panduan
+          <RouterLink to="/chat" class="h-12 inline-flex items-center px-8 rounded-full bg-white text-waris-900 font-extrabold hover:scale-105 active:scale-95 transition-all duration-300">
+            <i class="fa-solid fa-comments mr-1.5"></i>Mulai Konsultasi
           </RouterLink>
-          <RouterLink to="/kontak" class="h-12 inline-flex items-center px-8 rounded-full bg-white/15 border-2 border-white/25 font-extrabold hover:bg-white/25 hover:scale-105 active:scale-95 transition-all duration-300">
-            <i class="fa-solid fa-envelope mr-1.5"></i>Hubungi Kami
+          <RouterLink to="/panduan" class="h-12 inline-flex items-center px-8 rounded-full bg-white/15 border-2 border-white/25 font-extrabold hover:bg-white/25 hover:scale-105 active:scale-95 transition-all duration-300">
+            <i class="fa-solid fa-book-open mr-1.5"></i>Buka Panduan
           </RouterLink>
         </div>
       </div>

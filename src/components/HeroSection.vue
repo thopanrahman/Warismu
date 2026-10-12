@@ -30,10 +30,16 @@ defineEmits(['buka-modal'])
         </p>
         <div class="mt-8 flex flex-wrap gap-3">
           <RouterLink
-            to="/panduan"
+            to="/chat"
             class="inline-flex items-center gap-2 h-12 px-8 rounded-full bg-waris-900 hover:scale-105 active:scale-95 text-white font-bold shadow-soft hover:shadow-float transition-all duration-300"
           >
-            <i class="fa-solid fa-comments"></i> Mulai Belajar
+            <i class="fa-solid fa-comments"></i> Mulai Konsultasi
+          </RouterLink>
+          <RouterLink
+            to="/panduan"
+            class="inline-flex items-center gap-2 h-12 px-8 rounded-full bg-white/60 border-2 border-waris-900/20 text-waris-900 font-bold hover:bg-white hover:scale-105 active:scale-95 transition-all duration-300"
+          >
+            <i class="fa-solid fa-book-open"></i> Pelajari Dulu
           </RouterLink>
           <button
             class="inline-flex items-center gap-2 h-12 px-8 rounded-full border-2 border-waris-800 text-waris-800 font-bold hover:bg-waris-900/5 hover:scale-105 active:scale-95 transition-all duration-300"

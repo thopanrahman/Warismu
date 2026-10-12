@@ -18,6 +18,7 @@ function aktif(path) {
 
 const tautan = [
   { path: '/', label: 'Beranda', ikon: 'fa-solid fa-house' },
+  { path: '/chat', label: 'Chat', ikon: 'fa-solid fa-comments', utama: true },
   { path: '/tentang', label: 'Tentang', ikon: 'fa-solid fa-circle-info' },
   { path: '/panduan', label: 'Panduan', ikon: 'fa-solid fa-book-open' },
   { path: '/kontak', label: 'Kontak', ikon: 'fa-solid fa-envelope' },
@@ -52,7 +53,9 @@ const tautan = [
             :class="
               aktif(t.path)
                 ? 'bg-waris-900 text-white shadow-soft'
-                : 'text-ink/70 hover:bg-waris-900/10 hover:text-waris-900'
+                : t.utama
+                  ? 'bg-waris-900/10 text-waris-900 hover:bg-waris-900 hover:text-white'
+                  : 'text-ink/70 hover:bg-waris-900/10 hover:text-waris-900'
             "
           >
             <i :class="t.ikon" class="mr-1.5"></i>{{ t.label }}
@@ -82,7 +85,9 @@ const tautan = [
               :class="
                 aktif(t.path)
                   ? 'bg-waris-900 text-white'
-                  : 'text-ink/75 hover:bg-waris-900/10 hover:text-waris-900'
+                  : t.utama
+                    ? 'bg-waris-900/10 text-waris-900'
+                    : 'text-ink/75 hover:bg-waris-900/10 hover:text-waris-900'
               "
               @click="tutupMenu"
             >
