@@ -86,7 +86,6 @@ const kelompok = computed(() => {
           <span class="w-9 h-9 rounded-full bg-waris-300 text-waris-950 grid place-items-center text-xs font-extrabold shrink-0">TR</span>
           <div class="min-w-0">
             <p class="text-[13px] font-extrabold truncate">Thopan Rahman</p>
-            <p class="text-[10px] text-waris-100/60 font-bold">Mode Tamu • Guest</p>
           </div>
         </div>
       </div>

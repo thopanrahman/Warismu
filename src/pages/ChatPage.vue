@@ -45,13 +45,6 @@ const daftarPesan = reactive([])
 
 const belumMulai = computed(() => daftarPesan.length === 0)
 
-const daftarSaran = [
-  'Ayah wafat, tinggal ibu, istri, 1 anak lk & 2 anak pr, harta Rp500jt',
-  'Apa itu ashabah dalam faraid?',
-  'Berapa bagian istri jika ada anak?',
-  'Hutang pewaris belum lunas, bagaimana?',
-]
-
 // ============ MESIN MOCK (nanti diganti LLM: FR-03 s/d FR-07) ============
 function rupiah(n) {
   return 'Rp' + n.toLocaleString('id-ID')
@@ -235,9 +228,9 @@ function hapusRiwayat() {
         </span>
         <div class="min-w-0">
           <p class="font-display font-bold leading-tight truncate">Konsultasi Waris</p>
-          <p class="text-[11px] font-bold flex items-center gap-1.5" :class="sedangMengetik ? 'text-waris-700' : 'text-waris-900'">
-            <span class="w-2 h-2 rounded-full" :class="sedangMengetik ? 'bg-waris-600 animate-pulse' : 'bg-waris-900'"></span>
-            {{ sedangMengetik ? 'WarisMu sedang mengetik…' : 'Online • Mode Tamu' }}
+          <p v-if="sedangMengetik" class="text-[11px] font-bold flex items-center gap-1.5 text-waris-700">
+            <span class="w-2 h-2 rounded-full bg-waris-600 animate-pulse"></span>
+            WarisMu sedang mengetik…
           </p>
         </div>
         <button
@@ -253,10 +246,7 @@ function hapusRiwayat() {
         <span class="w-16 h-16 rounded-full bg-waris-900 text-white grid place-items-center text-2xl shadow-soft mb-4">
           <i class="fa-solid fa-scale-balanced"></i>
         </span>
-        <h2 class="font-display font-bold text-xl sm:text-2xl leading-tight">Assalamu'alaikum, saya WarisMu 👋</h2>
-        <p class="text-sm text-ink/60 font-semibold mt-2 max-w-md">
-          Ceritakan kondisi keluarga dan harta pewaris dengan bahasa sehari-hari. Mulai sesi barumu di bawah.
-        </p>
+        <h2 class="font-display font-bold text-xl sm:text-2xl leading-tight">Assalamualaikum, Semoga Kondisimu baik baik saja ada yang perlu aku bantu?</h2>
 
         <div class="w-full max-w-2xl mt-6">
           <div class="flex items-end gap-2 bg-white/70 border border-waris-900/20 rounded-[1.75rem] p-2 pl-5 shadow-soft focus-within:ring-2 focus-within:ring-waris-900/30 transition-all text-left">
@@ -264,7 +254,7 @@ function hapusRiwayat() {
               ref="inputRef"
               v-model="pesanBaru"
               rows="1"
-              placeholder="Ceritakan kondisi keluarga & harta… (Enter kirim, Shift+Enter baris baru)"
+              placeholder="Ceritakan ke WarisMU"
               class="flex-1 min-w-0 bg-transparent resize-none outline-none text-sm py-2.5 max-h-32 placeholder:text-ink/35"
               @input="autoResize"
               @keydown="saatKeydown"
@@ -281,20 +271,6 @@ function hapusRiwayat() {
           </div>
         </div>
 
-        <div class="flex flex-wrap justify-center gap-2 mt-4 max-w-2xl">
-          <button
-            v-for="s in daftarSaran"
-            :key="s"
-            class="max-w-[16rem] truncate h-10 px-4 rounded-full bg-waris-900/10 border border-waris-900/15 text-waris-900 text-xs font-extrabold hover:bg-waris-900 hover:text-white active:scale-95 transition-all duration-300"
-            @click="kirimPesan(s)"
-          >
-            {{ s }}
-          </button>
-        </div>
-
-        <p class="text-[11px] text-ink/45 font-semibold mt-6">
-          WarisMu adalah simulasi edukatif — bukan pengganti ahli faraid.
-        </p>
       </div>
 
       <!-- TAMPILAN CHAT AKTIF -->
@@ -321,7 +297,7 @@ function hapusRiwayat() {
               ref="inputRef"
               v-model="pesanBaru"
               rows="1"
-              placeholder="Ceritakan kondisi keluarga & harta… (Enter kirim, Shift+Enter baris baru)"
+              placeholder="Ceritakan ke WarisMU"
               class="flex-1 min-w-0 bg-transparent resize-none outline-none text-sm py-2.5 max-h-32 placeholder:text-ink/35"
               @input="autoResize"
               @keydown="saatKeydown"
@@ -336,9 +312,6 @@ function hapusRiwayat() {
               <i class="fa-solid fa-arrow-up"></i>
             </button>
           </div>
-          <p class="text-center text-[11px] text-ink/45 font-semibold py-2.5">
-            WarisMu adalah simulasi edukatif — bukan pengganti ahli faraid.
-          </p>
         </div>
       </template>
     </section>
