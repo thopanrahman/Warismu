@@ -2,7 +2,7 @@
 // Kontrak balasan ke frontend:
 // { balas, tanya_lanjutan[], hasil{judul,bagian[],catatan}|null,
 //   sumber, disclaimer, selesai, dipakaiMock }
-const MODEL = 'gemini-2.0-flash'
+const MODEL = 'gemini-3.8-flash'
 
 const PROMPT_SISTEM = `Kamu WarisMu, asisten edukasi & simulasi waris Islam (faraid) untuk Muslim Indonesia.
 Tugasmu lewat percakapan bahasa natural:
@@ -60,7 +60,11 @@ export async function tanyaGemini(pesan, riwayat = []) {
         }),
       },
     )
-    if (!res.ok) return { ...balasanMock(pesan), catatanServer: `Gemini HTTP ${res.status}` }
+    if (!res.ok) {
+      const badan = await res.text().catch(() => '')
+      console.error('[Gemini API Error]', { status: res.status, body: badan.slice(0, 300) })
+      return { ...balasanMock(pesan), catatanServer: `Gemini HTTP ${res.status}: ${badan.slice(0, 120)}` }
+    }
     const data = await res.json()
     const teks = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
     const hasil = JSON.parse(teks)
