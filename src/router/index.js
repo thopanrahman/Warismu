@@ -5,6 +5,7 @@ import AboutPage from '../pages/AboutPage.vue'
 import PanduanPage from '../pages/PanduanPage.vue'
 import PanduanDetailPage from '../pages/PanduanDetailPage.vue'
 import ContactPage from '../pages/ContactPage.vue'
+import RegisterPage from '../pages/RegisterPage.vue'
 
 // Sengaja pakai Hash History (URL jadi /#/tentang).
 // Alasannya: hosting murah/statis (GitHub Pages, Netlify tanpa config,
@@ -24,6 +25,7 @@ const routes = [
     meta: { title: 'Detail Panduan' },
   },
   { path: '/kontak', name: 'kontak', component: ContactPage, meta: { title: 'Kontak' } },
+  { path: '/daftar', name: 'daftar', component: RegisterPage, meta: { title: 'Daftar Akun' } },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 

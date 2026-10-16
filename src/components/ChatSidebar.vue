@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 
 const props = defineProps({
   riwayat: { type: Array, required: true },
@@ -7,6 +8,24 @@ const props = defineProps({
   terbuka: { type: Boolean, default: false },
 })
 defineEmits(['baru', 'pilih', 'hapus', 'tutup'])
+
+// Kartu user: Registered vs Guest (FR-20) — dibaca dari localStorage (diisi UC-01)
+const pengguna = computed(() => {
+  try {
+    return JSON.parse(localStorage.getItem('warismu_user'))
+  } catch {
+    return null
+  }
+})
+const inisial = computed(() => {
+  const n = pengguna.value?.nama || '?'
+  return n.trim().charAt(0).toUpperCase()
+})
+function keluar() {
+  localStorage.removeItem('warismu_token')
+  localStorage.removeItem('warismu_user')
+  location.reload()
+}
 
 // Kelompokkan riwayat ala DeepSeek: Hari ini / Kemarin / Minggu lalu
 const kelompok = computed(() => {
@@ -82,12 +101,33 @@ const kelompok = computed(() => {
           <i class="fa-solid fa-trash-can"></i> Hapus riwayat
         </button>
         <!-- Kartu user: Registered vs Guest (FR-20) -->
-        <div class="flex items-center gap-3 bg-white/10 rounded-2xl px-3 py-2.5">
-          <span class="w-9 h-9 rounded-full bg-waris-300 text-waris-950 grid place-items-center text-xs font-extrabold shrink-0">TR</span>
-          <div class="min-w-0">
-            <p class="text-[13px] font-extrabold truncate">Thopan Rahman</p>
+        <div v-if="pengguna" class="bg-white/10 rounded-2xl px-3 py-2.5">
+          <div class="flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-waris-300 text-waris-950 grid place-items-center text-xs font-extrabold shrink-0">{{ inisial }}</span>
+            <div class="min-w-0 flex-1">
+              <p class="text-[13px] font-extrabold truncate">{{ pengguna.nama }}</p>
+            </div>
+            <button
+              aria-label="Keluar"
+              title="Keluar"
+              class="w-8 h-8 shrink-0 grid place-items-center rounded-full text-waris-100/60 hover:text-white hover:bg-white/10 transition"
+              @click="keluar"
+            >
+              <i class="fa-solid fa-right-from-bracket text-xs"></i>
+            </button>
           </div>
         </div>
+        <RouterLink
+          v-else
+          to="/daftar"
+          class="flex items-center gap-3 bg-white/10 hover:bg-white/15 rounded-2xl px-3 py-2.5 transition"
+          @click="$emit('tutup')"
+        >
+          <span class="w-9 h-9 rounded-full bg-waris-500 text-white grid place-items-center text-xs shrink-0">
+            <i class="fa-solid fa-user-plus"></i>
+          </span>
+          <span class="text-[13px] font-extrabold">Daftar / Masuk</span>
+        </RouterLink>
       </div>
     </aside>
   </div>

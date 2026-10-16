@@ -45,7 +45,7 @@ const daftarPesan = reactive([])
 
 const belumMulai = computed(() => daftarPesan.length === 0)
 
-// ============ MESIN MOCK (nanti diganti LLM: FR-03 s/d FR-07) ============
+// ============ FALLBACK OFFLINE (dipakai jika /api/chat tak terjangkau) ============
 function rupiah(n) {
   return 'Rp' + n.toLocaleString('id-ID')
 }
@@ -94,7 +94,11 @@ function potongJudul(teks) {
   return bersih.length > 38 ? bersih.slice(0, 38) + '…' : bersih
 }
 
-function kirimPesan(teksLangsung = '') {
+function ringkasRiwayat() {
+  return daftarPesan.slice(-10).map((p) => ({ peran: p.peran, teks: p.teks }))
+}
+
+async function kirimPesan(teksLangsung = '') {
   const isi = (teksLangsung || pesanBaru.value).trim()
   if (!isi || sedangMengetik.value) return
 
@@ -112,16 +116,38 @@ function kirimPesan(teksLangsung = '') {
   gulirBawah()
   simpanSesiAktif()
 
-  // Typing indicator + balasan mock 900ms
+  // Coba backend sungguhan dulu (UC-07/08/09 via Gemini), gagal → mock lokal
   sedangMengetik.value = true
   gulirBawah()
-  setTimeout(() => {
-    const balasan = buatBalasanMock(isi)
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pesan: isi, riwayat: ringkasRiwayat() }),
+    })
+    if (!res.ok) throw new Error('HTTP ' + res.status)
+    const data = await res.json()
+    let teks = data.balas || 'Maaf, saya tidak mendapat jawaban. Coba ulangi.'
+    if (data.tanya_lanjutan?.length && !data.selesai) {
+      teks += '\n\n' + data.tanya_lanjutan.map((t, i) => `${i + 1}. ${t}`).join('\n')
+    }
+    daftarPesan.push({
+      id: ++idCounter,
+      peran: 'bot',
+      dilapor: false,
+      teks,
+      hasil: data.hasil ?? null,
+      sumber: data.sumber,
+      disclaimer: data.disclaimer,
+    })
+  } catch {
+    const balasan = buatBalasanMock(isi) // offline / API down → mock lokal
     daftarPesan.push({ id: ++idCounter, peran: 'bot', dilapor: false, ...balasan })
+  } finally {
     sedangMengetik.value = false
     gulirBawah()
     simpanSesiAktif()
-  }, 900)
+  }
 }
 
 function laporkan(id) {

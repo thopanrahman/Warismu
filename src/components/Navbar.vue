@@ -22,6 +22,7 @@ const tautan = [
   { path: '/tentang', label: 'Tentang', ikon: 'fa-solid fa-circle-info' },
   { path: '/panduan', label: 'Panduan', ikon: 'fa-solid fa-book-open' },
   { path: '/kontak', label: 'Kontak', ikon: 'fa-solid fa-envelope' },
+  { path: '/daftar', label: 'Daftar', ikon: 'fa-solid fa-user-plus' },
 ]
 </script>
 
