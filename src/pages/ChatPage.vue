@@ -8,6 +8,7 @@ import ChatSidebar from '../components/ChatSidebar.vue'
 // Refresh = kembali ke tampilan awal (permintaan Desweb).
 const pesanBaru = ref('')
 const sedangMengetik = ref(false)
+const galatApi = ref('')
 const sidebarTerbuka = ref(false)
 const areaPesan = ref(null)
 let idCounter = Date.now()
@@ -117,6 +118,7 @@ async function kirimPesan(teksLangsung = '') {
   simpanSesiAktif()
 
   // Coba backend sungguhan dulu (UC-07/08/09 via Gemini), gagal → mock lokal
+  galatApi.value = ''
   sedangMengetik.value = true
   gulirBawah()
   try {
@@ -140,7 +142,12 @@ async function kirimPesan(teksLangsung = '') {
       sumber: data.sumber,
       disclaimer: data.disclaimer,
     })
+    galatApi.value = ''
   } catch {
+    // DESIGN.md §4.2 — state Error: pesan error dengan border merah.
+    // Mock Fallback tetap dipakai agar percakapan tidak buntu saat API key belum diset.
+    galatApi.value =
+      'Koneksi ke server gagal. Balasan di bawah ini dihasilkan mode luring (mock lokal), bukan dari Gemini.'
     const balasan = buatBalasanMock(isi) // offline / API down → mock lokal
     daftarPesan.push({ id: ++idCounter, peran: 'bot', dilapor: false, ...balasan })
   } finally {
@@ -187,6 +194,7 @@ function sesiBaru() {
   daftarPesan.splice(0)
   sesiAktifId.value = null
   pesanBaru.value = ''
+  galatApi.value = ''
   sidebarTerbuka.value = false
 }
 
@@ -238,10 +246,10 @@ function hapusRiwayat() {
       @tutup="sidebarTerbuka = false"
     />
 
-    <!-- Area chat utama -->
-    <section class="flex-1 min-w-0 flex flex-col bg-cream border border-waris-900/10 rounded-[2rem] shadow-soft overflow-hidden">
+    <!-- Area chat utama (DESIGN.md §4.2: background cream) -->
+    <section class="flex-1 min-w-0 flex flex-col bg-cream border border-waris-900/10 rounded-xl shadow-soft overflow-hidden">
       <!-- Header chat -->
-      <div class="flex items-center gap-3 px-4 sm:px-6 py-3.5 border-b border-waris-900/10">
+      <div class="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-waris-900/10">
         <button
           aria-label="Buka/tutup riwayat"
           class="md:hidden w-11 h-11 grid place-items-center rounded-full border border-waris-900/20 text-waris-900 hover:bg-waris-900/10 active:scale-95 transition-all"
@@ -253,18 +261,27 @@ function hapusRiwayat() {
           <i class="fa-solid fa-scale-balanced"></i>
         </span>
         <div class="min-w-0">
-          <p class="font-display font-bold leading-tight truncate">Konsultasi Waris</p>
-          <p v-if="sedangMengetik" class="text-[11px] font-bold flex items-center gap-1.5 text-waris-700">
+          <p class="font-bold leading-tight truncate">Konsultasi Waris</p>
+          <p v-if="sedangMengetik" class="text-xs font-bold flex items-center gap-2 text-waris-700">
             <span class="w-2 h-2 rounded-full bg-waris-600 animate-pulse"></span>
             WarisMu sedang mengetik…
           </p>
         </div>
         <button
-          class="ml-auto h-10 px-4 rounded-full border-2 border-waris-800 text-waris-800 text-xs font-extrabold hover:bg-waris-900/5 active:scale-95 transition-all"
+          class="ml-auto h-10 px-4 rounded-lg border border-waris-800 text-waris-800 text-xs font-extrabold hover:bg-waris-900/5 active:scale-95 transition-all"
           @click="sesiBaru"
         >
-          <i class="fa-solid fa-plus mr-1"></i><span class="hidden sm:inline">Sesi Baru</span>
+          <i class="fa-solid fa-plus mr-2"></i><span class="hidden sm:inline">Sesi Baru</span>
         </button>
+      </div>
+
+      <!-- State ERROR (DESIGN.md §4.2): border merah saat API Gemini gagal -->
+      <div
+        v-if="galatApi"
+        class="mx-4 sm:mx-6 mt-4 flex items-start gap-3 rounded-lg border border-danger bg-danger-soft px-4 py-3 text-xs font-bold text-danger"
+      >
+        <i class="fa-solid fa-triangle-exclamation mt-1"></i>
+        <span>{{ galatApi }}</span>
       </div>
 
       <!-- TAMPILAN AWAL KOSONG: input di tengah -->
@@ -272,16 +289,16 @@ function hapusRiwayat() {
         <span class="w-16 h-16 rounded-full bg-waris-900 text-white grid place-items-center text-2xl shadow-soft mb-4">
           <i class="fa-solid fa-scale-balanced"></i>
         </span>
-        <h2 class="font-display font-bold text-xl sm:text-2xl leading-tight">Assalamualaikum, Semoga Kondisimu baik baik saja ada yang perlu aku bantu?</h2>
+        <h2 class="font-bold text-xl sm:text-2xl leading-tight">Assalamualaikum, semoga kondisimu baik-baik saja. Ada yang bisa WarisMu bantu?</h2>
 
         <div class="w-full max-w-2xl mt-6">
-          <div class="flex items-end gap-2 bg-white/70 border border-waris-900/20 rounded-[1.75rem] p-2 pl-5 shadow-soft focus-within:ring-2 focus-within:ring-waris-900/30 transition-all text-left">
+          <div class="flex items-end gap-2 bg-white/70 border border-waris-900/20 rounded-lg p-2 pl-5 shadow-soft focus-within:ring-2 focus-within:ring-waris-900/30 transition-all text-left">
             <textarea
               ref="inputRef"
               v-model="pesanBaru"
               rows="1"
-              placeholder="Ceritakan ke WarisMU"
-              class="flex-1 min-w-0 bg-transparent resize-none outline-none text-sm py-2.5 max-h-32 placeholder:text-ink/35"
+              placeholder="Ceritakan ke WarisMu"
+              class="flex-1 min-w-0 bg-transparent resize-none outline-none text-sm py-3 max-h-32 placeholder:text-ink/35"
               @input="autoResize"
               @keydown="saatKeydown"
             ></textarea>
@@ -304,11 +321,11 @@ function hapusRiwayat() {
         <!-- Daftar pesan + typing indicator -->
         <div ref="areaPesan" class="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
           <ChatBubble v-for="b in daftarPesan" :key="b.id" :bubble="b" @laporkan="laporkan" />
-          <div v-if="sedangMengetik" class="flex justify-start gap-2.5">
+          <div v-if="sedangMengetik" class="flex justify-start gap-3">
             <span class="w-9 h-9 shrink-0 rounded-full bg-waris-900 text-white grid place-items-center text-sm">
               <i class="fa-solid fa-scale-balanced"></i>
             </span>
-            <div class="bg-cream border border-waris-900/10 rounded-[1.5rem] rounded-bl-lg px-5 py-4 flex gap-1.5 items-center shadow-soft">
+            <div class="bg-waris-50 text-ink rounded-xl rounded-tl-none px-5 py-4 flex gap-2 items-center shadow-soft">
               <span class="w-2 h-2 rounded-full bg-waris-800 animate-bounce" style="animation-delay: 0ms"></span>
               <span class="w-2 h-2 rounded-full bg-waris-800 animate-bounce" style="animation-delay: 150ms"></span>
               <span class="w-2 h-2 rounded-full bg-waris-800 animate-bounce" style="animation-delay: 300ms"></span>
@@ -318,13 +335,13 @@ function hapusRiwayat() {
 
         <!-- Input bawah -->
         <div class="px-4 sm:px-6 pb-2 pt-1">
-          <div class="flex items-end gap-2 bg-white/70 border border-waris-900/20 rounded-[1.75rem] p-2 pl-5 shadow-soft focus-within:ring-2 focus-within:ring-waris-900/30 transition-all">
+          <div class="flex items-end gap-2 bg-white/70 border border-waris-900/20 rounded-lg p-2 pl-5 shadow-soft focus-within:ring-2 focus-within:ring-waris-900/30 transition-all">
             <textarea
               ref="inputRef"
               v-model="pesanBaru"
               rows="1"
-              placeholder="Ceritakan ke WarisMU"
-              class="flex-1 min-w-0 bg-transparent resize-none outline-none text-sm py-2.5 max-h-32 placeholder:text-ink/35"
+              placeholder="Ceritakan ke WarisMu"
+              class="flex-1 min-w-0 bg-transparent resize-none outline-none text-sm py-3 max-h-32 placeholder:text-ink/35"
               @input="autoResize"
               @keydown="saatKeydown"
             ></textarea>

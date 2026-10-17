@@ -8,7 +8,7 @@ defineProps({
 
 <template>
   <article
-    class="group bg-cream rounded-[2rem] border border-waris-900/10 overflow-hidden shadow-soft hover:shadow-float hover:-translate-y-1 hover:rotate-1 transition-all duration-300 flex flex-col"
+    class="group bg-cream rounded-lg border border-waris-900/10 overflow-hidden shadow-soft hover:shadow-float hover:-translate-y-1 hover:rotate-1 transition-all duration-300 flex flex-col"
   >
     <div class="relative overflow-hidden">
       <img
@@ -19,17 +19,17 @@ defineProps({
       />
       <div class="absolute inset-0 bg-waris-950/15 group-hover:bg-transparent transition-all duration-500"></div>
       <span
-        class="absolute top-3 left-3 text-[11px] font-extrabold bg-waris-900 text-white px-4 py-1.5 rounded-full shadow-soft"
+        class="absolute top-3 left-3 text-xs font-extrabold bg-waris-900 text-white px-4 py-2 rounded-full shadow-soft"
       >
         {{ artikel.kategori }}
       </span>
     </div>
     <div class="p-6 flex flex-col flex-1">
-      <div class="flex items-center gap-3 text-[11px] text-ink/45 font-bold mb-2">
+      <div class="flex items-center gap-3 text-xs text-ink/45 font-bold mb-2">
         <span><i class="fa-regular fa-calendar mr-1"></i>{{ artikel.tanggal }}</span>
         <span><i class="fa-regular fa-clock mr-1"></i>{{ artikel.estimasi }}</span>
       </div>
-      <h3 class="font-display font-bold text-lg leading-snug mb-2 text-ink">{{ artikel.judul }}</h3>
+      <h3 class="font-bold text-lg leading-snug mb-2 text-ink">{{ artikel.judul }}</h3>
       <p class="text-sm text-ink/60 leading-relaxed flex-1">{{ artikel.ringkasan }}</p>
       <RouterLink
         :to="`/panduan/${artikel.id}`"

@@ -38,11 +38,11 @@ async function daftar() {
 
 <template>
   <div class="flex-1 flex items-center justify-center px-4 sm:px-6 py-10">
-    <div class="w-full max-w-md bg-cream border border-waris-900/10 rounded-[2rem] shadow-soft p-6 sm:p-8">
+    <div class="w-full max-w-md bg-cream border border-waris-900/10 rounded-lg shadow-soft p-6 sm:p-8">
       <span class="w-14 h-14 rounded-full bg-waris-900 text-white grid place-items-center text-xl mx-auto">
         <i class="fa-solid fa-user-plus"></i>
       </span>
-      <h1 class="font-display font-bold text-2xl text-center mt-3">Daftar Akun WarisMu</h1>
+      <h1 class="font-bold text-2xl text-center mt-3">Daftar Akun WarisMu</h1>
       <p class="text-sm text-ink/60 font-semibold text-center mt-1">
         Simpan riwayat konsultasimu agar bisa dibuka lagi kapan saja.
       </p>
@@ -53,29 +53,29 @@ async function daftar() {
           type="text"
           placeholder="Nama lengkap"
           autocomplete="name"
-          class="w-full h-12 px-5 rounded-full bg-white/70 border border-waris-900/20 outline-none text-sm focus:ring-2 focus:ring-waris-900/30 placeholder:text-ink/35"
+          class="w-full h-12 px-5 rounded-lg bg-white/70 border border-waris-900/20 outline-none text-sm focus:ring-2 focus:ring-waris-900/30 placeholder:text-ink/35"
         />
         <input
           v-model="email"
           type="email"
           placeholder="Email"
           autocomplete="email"
-          class="w-full h-12 px-5 rounded-full bg-white/70 border border-waris-900/20 outline-none text-sm focus:ring-2 focus:ring-waris-900/30 placeholder:text-ink/35"
+          class="w-full h-12 px-5 rounded-lg bg-white/70 border border-waris-900/20 outline-none text-sm focus:ring-2 focus:ring-waris-900/30 placeholder:text-ink/35"
         />
         <input
           v-model="password"
           type="password"
           placeholder="Password (min. 6 karakter)"
           autocomplete="new-password"
-          class="w-full h-12 px-5 rounded-full bg-white/70 border border-waris-900/20 outline-none text-sm focus:ring-2 focus:ring-waris-900/30 placeholder:text-ink/35"
+          class="w-full h-12 px-5 rounded-lg bg-white/70 border border-waris-900/20 outline-none text-sm focus:ring-2 focus:ring-waris-900/30 placeholder:text-ink/35"
         />
-        <p v-if="galat" class="text-xs font-bold text-red-700 bg-red-50 border border-red-200 rounded-2xl px-4 py-2.5">
-          <i class="fa-solid fa-circle-exclamation mr-1.5"></i>{{ galat }}
+        <p v-if="galat" class="text-xs font-bold text-danger bg-danger-soft border border-danger/25 rounded-lg px-4 py-3">
+          <i class="fa-solid fa-circle-exclamation mr-2"></i>{{ galat }}
         </p>
         <button
           type="submit"
           :disabled="sibuk"
-          class="w-full h-12 rounded-full bg-waris-900 text-white text-sm font-extrabold shadow-soft transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-wait"
+          class="w-full h-12 rounded-lg bg-waris-900 text-white text-sm font-extrabold shadow-soft transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-wait"
         >
           <i v-if="sibuk" class="fa-solid fa-circle-notch fa-spin mr-2"></i>
           {{ sibuk ? 'Mendaftarkan…' : 'Daftar Sekarang' }}

@@ -22,35 +22,37 @@ const tautan = [
   { path: '/tentang', label: 'Tentang', ikon: 'fa-solid fa-circle-info' },
   { path: '/panduan', label: 'Panduan', ikon: 'fa-solid fa-book-open' },
   { path: '/kontak', label: 'Kontak', ikon: 'fa-solid fa-envelope' },
-  { path: '/daftar', label: 'Daftar', ikon: 'fa-solid fa-user-plus' },
 ]
+
+// DESIGN.md §4.1: menu "Daftar Akun" wajib terlihat jelas sebagai tombol primary bg-waris-900
+const tombolDaftar = { path: '/daftar', label: 'Daftar Akun', ikon: 'fa-solid fa-user-plus' }
 </script>
 
 <template>
   <div class="sticky top-4 z-40 px-4 sm:px-6">
     <header
-      class="max-w-6xl mx-auto rounded-full bg-white/70 backdrop-blur-md border border-[#DED8CF]/50 shadow-soft"
+      class="max-w-6xl mx-auto rounded-xl bg-white/70 backdrop-blur-md border border-waris-900/10 shadow-soft"
     >
       <nav class="flex items-center justify-between px-4 sm:px-6 py-3">
-        <RouterLink to="/" class="flex items-center gap-2.5" @click="tutupMenu">
+        <RouterLink to="/" class="flex items-center gap-3" @click="tutupMenu">
           <span
             class="w-10 h-10 rounded-full bg-waris-900 text-white grid place-items-center text-xl shadow-soft"
           >
             <i class="fa-solid fa-scale-balanced"></i>
           </span>
           <span class="leading-tight">
-            <span class="block font-display font-bold text-lg text-ink">WarisMu</span>
-            <span class="block text-[11px] text-ink/55 -mt-0.5 font-semibold">Asisten Waris Islam</span>
+            <span class="block font-bold text-lg text-ink">WarisMu</span>
+            <span class="block text-xs text-ink/55 -mt-1 font-semibold">Asisten Waris Islam</span>
           </span>
         </RouterLink>
 
-        <!-- Menu desktop -->
+        <!-- Menu desktop + tombol Daftar Akun (primary) -->
         <div class="hidden md:flex items-center gap-1">
           <RouterLink
             v-for="t in tautan"
             :key="t.path"
             :to="t.path"
-            class="px-4 py-2 rounded-full text-sm font-bold transition-all duration-300"
+            class="px-4 py-2 rounded-lg text-sm font-bold transition-all duration-300"
             :class="
               aktif(t.path)
                 ? 'bg-waris-900 text-white shadow-soft'
@@ -59,7 +61,13 @@ const tautan = [
                   : 'text-ink/70 hover:bg-waris-900/10 hover:text-waris-900'
             "
           >
-            <i :class="t.ikon" class="mr-1.5"></i>{{ t.label }}
+            <i :class="t.ikon" class="mr-2"></i>{{ t.label }}
+          </RouterLink>
+          <RouterLink
+            :to="tombolDaftar.path"
+            class="ml-1 inline-flex items-center h-11 px-5 rounded-lg bg-waris-900 text-white text-sm font-bold shadow-soft hover:bg-waris-800 active:scale-95 transition-all duration-300"
+          >
+            <i :class="tombolDaftar.ikon" class="mr-2"></i>{{ tombolDaftar.label }}
           </RouterLink>
         </div>
 
@@ -77,12 +85,12 @@ const tautan = [
       <!-- Menu mobile -->
       <transition name="fade">
         <div v-if="menuBuka" class="md:hidden px-4 pb-4">
-          <div class="flex flex-col gap-1 rounded-[2rem] border border-waris-900/10 bg-cream p-3">
+          <div class="flex flex-col gap-1 rounded-lg border border-waris-900/10 bg-cream p-3">
             <RouterLink
               v-for="t in tautan"
               :key="t.path"
               :to="t.path"
-              class="px-4 py-3 rounded-full text-sm font-bold flex items-center gap-3 transition-all duration-300"
+              class="px-4 py-3 rounded-lg text-sm font-bold flex items-center gap-3 transition-all duration-300"
               :class="
                 aktif(t.path)
                   ? 'bg-waris-900 text-white'
@@ -93,6 +101,13 @@ const tautan = [
               @click="tutupMenu"
             >
               <i :class="t.ikon" class="w-5 text-center"></i>{{ t.label }}
+            </RouterLink>
+            <RouterLink
+              :to="tombolDaftar.path"
+              class="mt-1 px-4 py-3 rounded-lg bg-waris-900 text-white text-sm font-bold flex items-center gap-3 active:scale-95 transition-all duration-300"
+              @click="tutupMenu"
+            >
+              <i :class="tombolDaftar.ikon" class="w-5 text-center"></i>{{ tombolDaftar.label }}
             </RouterLink>
           </div>
         </div>

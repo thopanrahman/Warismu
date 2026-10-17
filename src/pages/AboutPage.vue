@@ -16,15 +16,13 @@ const batasan = [
 
 <template>
   <div>
-    <section class="relative bg-waris-950 text-white overflow-hidden">
-      <div class="blob-a absolute -top-20 -left-20 w-80 h-80 bg-waris-700/30 blur-3xl pointer-events-none"></div>
-      <div class="blob-b absolute -bottom-24 right-0 w-80 h-80 bg-waris-500/20 blur-3xl pointer-events-none"></div>
-      <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 grid gap-12 lg:grid-cols-2 items-center">
+    <section class="bg-waris-950 text-white">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 grid gap-12 lg:grid-cols-2 items-center">
         <div>
           <span class="text-xs font-extrabold tracking-widest text-waris-200 uppercase">
-            <i class="fa-solid fa-circle-info mr-1.5"></i>Tentang WarisMu
+            <i class="fa-solid fa-circle-info mr-2"></i>Tentang WarisMu
           </span>
-          <h1 class="font-display text-5xl sm:text-6xl font-bold mt-3 leading-[1.05]">
+          <h1 class="text-5xl sm:text-6xl font-bold mt-4 leading-[1.05]">
             Edukasi Waris Islam untuk Semua Kalangan
           </h1>
           <p class="text-waris-50/80 mt-4 leading-relaxed">
@@ -36,31 +34,31 @@ const batasan = [
         <img
           src="https://images.unsplash.com/photo-1609599006353-e629aaabfeae?auto=format&fit=crop&w=900&q=80"
           alt="Al-Qur'an dan tasbih"
-          class="blob-b h-60 sm:h-72 w-full object-cover shadow-float border-4 border-white/90 rotate-2 hover:rotate-0 transition-all duration-500"
+          class="h-60 sm:h-72 w-full object-cover rounded-xl border border-white/15"
           loading="lazy"
         />
       </div>
     </section>
 
     <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 grid gap-8 md:grid-cols-2">
-      <div class="bg-cream rounded-[2rem] border border-waris-900/10 p-8 shadow-soft hover:-translate-y-1 transition-all duration-300">
-        <span class="w-14 h-14 rounded-2xl bg-waris-900/10 text-waris-900 grid place-items-center text-2xl mb-5">
+      <div class="bg-cream rounded-lg border border-waris-900/10 p-8 shadow-soft hover:-translate-y-1 transition-all duration-300">
+        <span class="w-14 h-14 rounded-lg bg-waris-900/10 text-waris-900 grid place-items-center text-2xl mb-5">
           <i class="fa-solid fa-eye"></i>
         </span>
-        <h2 class="font-display font-bold text-2xl text-ink">Visi</h2>
+        <h2 class="font-bold text-2xl text-ink">Visi</h2>
         <p class="text-sm text-ink/60 leading-relaxed mt-2">
           Menjadi asisten edukasi waris Islam paling dipercaya di Indonesia — menjembatani ilmu
           faraid klasik dengan teknologi percakapan modern, sehingga setiap keluarga dapat
           membagi warisan secara adil, transparan, dan sesuai syariat.
         </p>
       </div>
-      <div class="bg-cream rounded-[2rem] rounded-tl-[4rem] border border-waris-900/10 p-8 shadow-soft hover:-translate-y-1 transition-all duration-300">
-        <span class="w-14 h-14 rounded-2xl bg-waris-800/10 text-waris-800 grid place-items-center text-2xl mb-5">
+      <div class="bg-cream rounded-lg border border-waris-900/10 p-8 shadow-soft hover:-translate-y-1 transition-all duration-300">
+        <span class="w-14 h-14 rounded-lg bg-waris-800/10 text-waris-800 grid place-items-center text-2xl mb-5">
           <i class="fa-solid fa-bullseye"></i>
         </span>
-        <h2 class="font-display font-bold text-2xl text-ink">Misi</h2>
-        <ul class="mt-3 space-y-2.5 text-sm text-ink/70">
-          <li v-for="m in misi" :key="m.teks" class="flex gap-2.5">
+        <h2 class="font-bold text-2xl text-ink">Misi</h2>
+        <ul class="mt-4 space-y-3 text-sm text-ink/70">
+          <li v-for="m in misi" :key="m.teks" class="flex gap-3">
             <i :class="m.ikon" class="text-waris-900 mt-1"></i><span>{{ m.teks }}</span>
           </li>
         </ul>
@@ -68,73 +66,73 @@ const batasan = [
     </section>
 
     <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
-      <div class="bg-cream rounded-[2rem] border border-waris-900/10 p-8 shadow-soft">
+      <div class="bg-cream rounded-xl border border-waris-900/10 p-8 shadow-soft">
         <span class="text-xs font-extrabold tracking-widest text-waris-900 uppercase">
-          <i class="fa-solid fa-coins mr-1.5"></i>Model Bisnis Freemium
+          <i class="fa-solid fa-coins mr-2"></i>Model Bisnis Freemium
         </span>
-        <h2 class="font-display font-bold text-3xl mt-3 text-ink">Gratis Simulasi, Bayar Seikhlasnya untuk Ahli</h2>
+        <h2 class="font-bold text-3xl mt-4 text-ink">Gratis Simulasi, Bayar Seikhlasnya untuk Ahli</h2>
         <div class="grid gap-8 sm:grid-cols-2 mt-6">
-          <div class="bg-waris-50 rounded-[1.5rem] p-6 border border-waris-900/10">
-            <p class="font-display font-bold text-lg text-ink"><i class="fa-solid fa-gift mr-2 text-waris-900"></i>Gratis Selamanya</p>
+          <div class="bg-waris-50 rounded-lg p-6 border border-waris-900/10">
+            <p class="font-bold text-lg text-ink"><i class="fa-solid fa-gift mr-2 text-waris-900"></i>Gratis Selamanya</p>
             <p class="text-sm text-ink/60 mt-2">Simulasi chatbot, seluruh artikel panduan, dan mode tamu tanpa login — tanpa batas, tanpa paywall.</p>
           </div>
-          <div class="bg-waris-950 text-white rounded-[1.5rem] p-6">
-            <p class="font-display font-bold text-lg"><i class="fa-solid fa-user-tie mr-2 text-waris-300"></i>Konsultasi Ahli — Rp30rb/30 mnt</p>
-            <p class="text-sm text-waris-50/75 mt-2">Untuk kasus syawadz (kompleks): sesi video dengan ahli faraid tersertifikasi. WarisMu mendeteksi & mengarahkan otomatis.</p>
+          <div class="bg-waris-950 text-white rounded-lg p-6">
+            <p class="font-bold text-lg"><i class="fa-solid fa-user-tie mr-2 text-waris-300"></i>Konsultasi Ahli — Rp30rb/30 mnt</p>
+            <p class="text-sm text-waris-50/75 mt-2">Untuk kasus syawadz (kompleks): sesi video dengan ahli faraid tersertifikasi. WarisMu mendeteksi &amp; mengarahkan otomatis.</p>
           </div>
         </div>
       </div>
     </section>
 
     <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
-      <div class="bg-cream rounded-[2rem] border border-waris-900/10 p-8 shadow-soft grid gap-10 lg:grid-cols-2 items-center">
+      <div class="bg-cream rounded-xl border border-waris-900/10 p-8 shadow-soft grid gap-10 lg:grid-cols-2 items-center">
         <div>
           <span class="text-xs font-extrabold tracking-widest text-waris-900 uppercase">
-            <i class="fa-solid fa-clock-rotate-left mr-1.5"></i>Latar Belakang
+            <i class="fa-solid fa-clock-rotate-left mr-2"></i>Latar Belakang
           </span>
-          <h2 class="font-display font-bold text-3xl mt-3 text-ink">Kenapa WarisMu Dibuat?</h2>
-          <p class="text-sm text-ink/60 leading-relaxed mt-3">
+          <h2 class="font-bold text-3xl mt-4 text-ink">Kenapa WarisMu Dibuat?</h2>
+          <p class="text-sm text-ink/60 leading-relaxed mt-4">
             Sengketa warisan adalah salah satu konflik keluarga paling umum di Indonesia. Akar
             masalahnya sering kali bukan niat buruk, melainkan <strong>kurangnya literasi
             faraid</strong> dan sulitnya berkonsultasi ke ahli yang kompeten.
           </p>
-          <p class="text-sm text-ink/60 leading-relaxed mt-2">
+          <p class="text-sm text-ink/60 leading-relaxed mt-3">
             WarisMu hadir sebagai <em>gerbang pertama</em>: user bercerita dalam bahasa natural,
             sistem mengekstraksi data keluarga, menanyakan yang kurang, lalu menampilkan simulasi
             yang transparan — lengkap dengan dalil, sumber (KHI), dan disclaimer.
           </p>
         </div>
-        <div class="grid grid-cols-2 gap-8">
-          <div class="bg-waris-50 rounded-[2rem] p-6 text-center border border-waris-900/10 hover:-translate-y-1 transition-all duration-300">
+        <div class="grid grid-cols-2 gap-6">
+          <div class="bg-waris-50 rounded-lg p-6 text-center border border-waris-900/10 hover:-translate-y-1 transition-all duration-300">
             <i class="fa-solid fa-user text-waris-900 text-2xl"></i>
-            <p class="font-display font-bold mt-2 text-ink">Guest User</p>
-            <p class="text-xs text-ink/55 mt-1">Konsultasi tanpa login; riwayat hilang saat browser ditutup.</p>
+            <p class="font-bold mt-2 text-ink">Guest User</p>
+            <p class="text-xs text-ink/55 mt-2">Konsultasi tanpa login; riwayat hilang saat browser ditutup.</p>
           </div>
-          <div class="bg-waris-100/60 rounded-[2rem] rounded-br-[3.5rem] p-6 text-center border border-waris-900/10 hover:-translate-y-1 transition-all duration-300">
+          <div class="bg-waris-100/60 rounded-lg p-6 text-center border border-waris-900/10 hover:-translate-y-1 transition-all duration-300">
             <i class="fa-solid fa-user-check text-waris-800 text-2xl"></i>
-            <p class="font-display font-bold mt-2 text-ink">Registered User</p>
-            <p class="text-xs text-ink/55 mt-1">Punya akun; riwayat konsultasi tersimpan permanen.</p>
+            <p class="font-bold mt-2 text-ink">Registered User</p>
+            <p class="text-xs text-ink/55 mt-2">Punya akun; riwayat konsultasi tersimpan permanen.</p>
           </div>
         </div>
       </div>
     </section>
 
     <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      <div class="bg-waris-50 border-2 border-dashed border-waris-800/30 rounded-[2rem] p-8">
-        <h2 class="font-display font-bold text-2xl text-waris-950">
+      <div class="bg-waris-50 border border-waris-800/30 rounded-xl p-8">
+        <h2 class="font-bold text-2xl text-waris-950">
           <i class="fa-solid fa-shield-halved mr-2"></i>Batasan Produk — Penting Dibaca
         </h2>
-        <ul class="mt-4 space-y-2.5 text-sm text-ink/70">
-          <li v-for="b in batasan" :key="b.teks" class="flex gap-2.5">
+        <ul class="mt-4 space-y-3 text-sm text-ink/70">
+          <li v-for="b in batasan" :key="b.teks" class="flex gap-3">
             <i :class="b.ikon" class="text-waris-800 mt-1 shrink-0"></i><span>{{ b.teks }}</span>
           </li>
         </ul>
         <div class="mt-6 flex flex-wrap gap-3">
-          <RouterLink to="/panduan" class="h-12 inline-flex items-center px-8 rounded-full bg-waris-900 hover:scale-105 active:scale-95 text-white text-sm font-extrabold shadow-soft transition-all duration-300">
-            <i class="fa-solid fa-book-open mr-1.5"></i>Pelajari Faraid
+          <RouterLink to="/panduan" class="h-12 inline-flex items-center px-8 rounded-lg bg-waris-900 text-white text-sm font-extrabold shadow-soft hover:bg-waris-800 transition-all duration-300">
+            <i class="fa-solid fa-book-open mr-2"></i>Pelajari Faraid
           </RouterLink>
-          <RouterLink to="/kontak" class="h-12 inline-flex items-center px-8 rounded-full border-2 border-waris-800 text-waris-800 text-sm font-extrabold hover:bg-waris-900/5 hover:scale-105 active:scale-95 transition-all duration-300">
-            <i class="fa-solid fa-envelope mr-1.5"></i>Tanya Kami
+          <RouterLink to="/kontak" class="h-12 inline-flex items-center px-8 rounded-lg border border-waris-800 text-waris-800 text-sm font-extrabold hover:bg-waris-900/5 transition-all duration-300">
+            <i class="fa-solid fa-envelope mr-2"></i>Tanya Kami
           </RouterLink>
         </div>
       </div>

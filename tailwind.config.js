@@ -3,9 +3,8 @@ export default {
   content: ['./index.html', './src/**/*.{vue,js}'],
   theme: {
     extend: {
-      // Palet hijau WarisMu — turunan tint dari warna utama #1d8757
-      // 900 = warna utama (paling pekat) → 50 = paling muda → putih
-      // 950 = forest pekat turunan untuk section gelap/footer
+      // Palet hijau WarisMu — sesuai DESIGN.md §2.1 (hex wajib, tidak boleh diubah)
+      // 900 = brand utama → 50 = paling muda. 950 = forest untuk panel gelap.
       colors: {
         waris: {
           50: '#e8f3ee',
@@ -23,10 +22,15 @@ export default {
         paper: '#F7FBF8',
         cream: '#FEFEFA',
         ink: '#122A20',
+        // Satu-satunya keluarga di luar hijau: status bahaya/error.
+        // DESIGN.md §4.2 mewajibkan "pesan error dengan border merah".
+        danger: '#A85448',
+        'danger-light': '#d08c82',
+        'danger-soft': '#F6E7E5',
       },
+      // DESIGN.md §2.2: font wajib sans-serif. Fraunces (serif) dihapus.
       fontFamily: {
         sans: ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        display: ['Fraunces', 'Georgia', 'serif'],
       },
       boxShadow: {
         soft: '0 4px 20px -2px rgba(29, 135, 87, 0.15)',

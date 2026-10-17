@@ -5,16 +5,14 @@ const tahun = new Date().getFullYear()
 </script>
 
 <template>
-  <footer class="bg-waris-950 text-waris-50 mt-16 relative overflow-hidden">
-    <div class="blob-a absolute -top-20 -right-20 w-72 h-72 bg-waris-800/40 blur-3xl pointer-events-none"></div>
-    <div class="blob-b absolute -bottom-24 -left-16 w-72 h-72 bg-waris-700/25 blur-3xl pointer-events-none"></div>
-    <div class="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 grid gap-10 md:grid-cols-3">
+  <footer class="bg-waris-950 text-waris-50 mt-16">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-12 grid gap-10 md:grid-cols-3">
       <div>
-        <div class="flex items-center gap-2.5 mb-3">
+        <div class="flex items-center gap-3 mb-3">
           <span class="w-10 h-10 rounded-full bg-waris-500 text-white grid place-items-center text-xl">
             <i class="fa-solid fa-scale-balanced"></i>
           </span>
-          <span class="font-display font-bold text-xl">WarisMu</span>
+          <span class="font-bold text-xl">WarisMu</span>
         </div>
         <p class="text-sm text-waris-100/80 leading-relaxed">
           Asisten edukasi &amp; simulasi waris Islam (faraid) berbasis chatbot. Membantu masyarakat
@@ -33,7 +31,7 @@ const tahun = new Date().getFullYear()
         </div>
       </div>
       <div>
-        <h3 class="font-display font-bold mb-3 text-white">Navigasi</h3>
+        <h3 class="font-bold mb-3 text-white">Navigasi</h3>
         <ul class="space-y-2 text-sm">
           <li><RouterLink to="/" class="hover:text-waris-200 transition"><i class="fa-solid fa-house mr-2 text-xs"></i>Beranda</RouterLink></li>
           <li><RouterLink to="/chat" class="hover:text-waris-200 transition"><i class="fa-solid fa-comments mr-2 text-xs"></i>Chat Konsultasi</RouterLink></li>
@@ -43,17 +41,17 @@ const tahun = new Date().getFullYear()
         </ul>
       </div>
       <div>
-        <h3 class="font-display font-bold mb-3 text-white">Disclaimer</h3>
+        <h3 class="font-bold mb-3 text-white">Disclaimer</h3>
         <p class="text-sm text-waris-100/80 leading-relaxed">
           WarisMu adalah media edukasi dan <strong>bukan pengganti ahli faraid / ulama / notaris</strong>.
           Untuk kasus nyata, selalu konsultasikan ke ahli waris yang kompeten.
         </p>
         <p class="text-xs text-waris-100/60 mt-4">
-          <i class="fa-solid fa-book-quran mr-1.5"></i>QS. An-Nisa: 11–12, 176 • KHI Buku II
+          <i class="fa-solid fa-book-quran mr-2"></i>QS. An-Nisa: 11–12, 176 • KHI Buku II
         </p>
       </div>
     </div>
-    <div class="relative border-t border-white/10">
+    <div class="border-t border-white/10">
       <p class="max-w-6xl mx-auto px-4 sm:px-6 py-4 text-xs text-waris-100/60 text-center">
         © {{ tahun }} WarisMu — Tugas Proyek Desain Web • Informatika • Frontend mock (data hardcode)
       </p>

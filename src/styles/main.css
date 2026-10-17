@@ -1,14 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800&family=Nunito:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ===== Fondasi organik WarisMu ===== */
+/* ===== Fondasi WarisMu (DESIGN.md §2) ===== */
+/* Semua warna diambil dari token, bukan hex lepas. */
 body {
   font-family: 'Nunito', ui-sans-serif, system-ui, sans-serif;
-  background-color: #f7fbf8;
-  color: #122a20;
+  background-color: theme('colors.paper');
+  color: theme('colors.ink');
   position: relative;
 }
 
@@ -24,22 +25,8 @@ body::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-h1,
-h2,
-.font-display {
-  font-family: 'Fraunces', Georgia, serif;
-}
-
-/* Bentuk blob organik khas gaya natural */
-.blob-a {
-  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
-}
-.blob-b {
-  border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-}
-.blob-c {
-  border-radius: 45% 55% 62% 38% / 55% 42% 58% 45%;
-}
+/* Catatan: bentuk blob organik (.blob-a/.blob-b/.blob-c) DIHAPUS —
+   DESIGN.md §3.2 melarang blob/ilustrasi dekoratif tanpa makna. */
 
 /* Transisi fade antar halaman (dipakai di App.vue) */
 .fade-enter-active,
