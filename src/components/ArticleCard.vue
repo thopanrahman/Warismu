@@ -8,7 +8,7 @@ defineProps({
 
 <template>
   <article
-    class="group bg-cream rounded-lg border border-waris-900/10 overflow-hidden shadow-soft hover:shadow-float hover:-translate-y-1 hover:rotate-1 transition-all duration-300 flex flex-col"
+    class="group bg-white rounded-2xl border border-waris-900/10 overflow-hidden shadow-soft hover:shadow-float hover:-translate-y-1 transition-all duration-300 flex flex-col"
   >
     <div class="relative overflow-hidden">
       <img

@@ -51,10 +51,10 @@ defineEmits(['laporkan'])
         <i class="fa-solid fa-book mr-2 text-waris-900"></i><strong>Sumber:</strong> {{ bubble.sumber }}
       </p>
 
-      <!-- Disclaimer wajib (FR-12) -->
-      <p v-if="bubble.disclaimer" class="mt-3 text-xs text-ink/60 bg-waris-100 border border-waris-800/20 rounded-lg px-4 py-3 leading-relaxed">
-        <i class="fa-solid fa-triangle-exclamation mr-2 text-waris-800"></i>{{ bubble.disclaimer }}
-      </p>
+      <!-- FR-12: blok disclaimer sengaja TIDAK ditampilkan (permintaan pemilik produk).
+           Datanya tetap ikut tersimpan di bubble.disclaimer, jadi bisa dinyalakan lagi
+           cukup dengan mengembalikan blok <p> di bawah ini. -->
+      <!-- <p v-if="bubble.disclaimer">…</p> -->
 
       <!-- Tombol Laporkan jawaban AI (FR-19) -->
       <div v-if="bubble.hasil" class="mt-3 flex justify-end">

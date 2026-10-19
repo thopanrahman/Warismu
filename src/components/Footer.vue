@@ -12,7 +12,7 @@ const tahun = new Date().getFullYear()
           <span class="w-10 h-10 rounded-full bg-waris-500 text-white grid place-items-center text-xl">
             <i class="fa-solid fa-scale-balanced"></i>
           </span>
-          <span class="font-bold text-xl">WarisMu</span>
+          <span class="font-display font-bold text-xl">WarisMu</span>
         </div>
         <p class="text-sm text-waris-100/80 leading-relaxed">
           Asisten edukasi &amp; simulasi waris Islam (faraid) berbasis chatbot. Membantu masyarakat
@@ -44,7 +44,7 @@ const tahun = new Date().getFullYear()
         <h3 class="font-bold mb-3 text-white">Disclaimer</h3>
         <p class="text-sm text-waris-100/80 leading-relaxed">
           WarisMu adalah media edukasi dan <strong>bukan pengganti ahli faraid / ulama / notaris</strong>.
-          Untuk kasus nyata, selalu konsultasikan ke ahli waris yang kompeten.
+          Untuk kasus nyata, konsultasikan kepada tenaga ahli yang kompeten.
         </p>
         <p class="text-xs text-waris-100/60 mt-4">
           <i class="fa-solid fa-book-quran mr-2"></i>QS. An-Nisa: 11–12, 176 • KHI Buku II

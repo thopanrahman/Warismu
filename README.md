@@ -19,12 +19,12 @@ Arah: **Modern Islamic, Minimal, Professional, Anti-Slop**.
 | Warna brand | `waris-900` `#1d8757` (primary) + ramp tint `waris-50…950` (`950` = `#0e3d27` untuk panel gelap) |
 | Netral | `paper` `#F7FBF8` (latar halaman), `cream` `#FEFEFA` (panel), `ink` `#122A20` (teks) |
 | Status | keluarga `danger` `#A85448`, `danger-light`, `danger-soft` — satu-satunya keluarga di luar hijau |
-| Font | **Nunito** (sans-serif) via Google Fonts di `src/styles/main.css` — dipilih karena DESIGN.md §2.2 mewajibkan sans-serif, sedangkan aturan anti-slop melarang Inter/Roboto/Arial/System UI |
+| Font | **Fraunces** (serif) untuk judul/heading & logo + **Nunito** (sans-serif) untuk body — dimuat dari Google Fonts di `src/styles/main.css`, token di `tailwind.config.js` (`font-display` / `font-sans`) |
 | Radius | `rounded-lg` (kartu, input, tombol teks), `rounded-xl` (panel/section besar, modal, CTA), `rounded-full` (avatar, badge, titik indikator) |
 | Spacing | kelipatan 4px (`py-3`, `gap-3`, `mt-4`, …) |
 | Bayangan | `shadow-soft` & `shadow-float` — tint hijau `rgba(29,135,87,…)`, bukan hitam |
 | Tekstur | grain kertas global 3,5% (`body::before`, `mix-blend-mode: multiply`) |
-| Dilarang | blob/ilustrasi dekoratif tanpa makna, gradien SaaS generik, font serif, kartu aksen `border-l-4`, `<table>` untuk layout utama, emoji sebagai ikon UI |
+| Dilarang | blob/ilustrasi dekoratif tanpa makna, gradien SaaS generik, kartu aksen `border-l-4`, `<table>` untuk layout utama, emoji sebagai ikon UI |
 
 Semua nilai warna, font, dan bayangan dikelola sebagai **token** di `tailwind.config.js` —
 komponen `.vue` tidak memuat hex lepas.

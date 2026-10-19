@@ -28,9 +28,11 @@ export default {
         'danger-light': '#d08c82',
         'danger-soft': '#F6E7E5',
       },
-      // DESIGN.md §2.2: font wajib sans-serif. Fraunces (serif) dihapus.
+      // Nunito = teks pendukung (navigasi, pesan, kontrol).
+      // Fraunces = judul/logo (permintaan desain halaman Beranda, Tentang, & Chat).
       fontFamily: {
         sans: ['Nunito', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
       },
       boxShadow: {
         soft: '0 4px 20px -2px rgba(29, 135, 87, 0.15)',

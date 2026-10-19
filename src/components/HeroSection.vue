@@ -1,75 +1,67 @@
 <script setup>
 import { RouterLink } from 'vue-router'
 
-defineProps({
-  tampilModal: { type: Boolean, default: false },
-})
+// Hero Beranda: foto keluarga sebagai latar + lapisan gelap agar teks putih terbaca.
+// -mt-[5.25rem] = tinggi blok navbar (pt-4 App + navbar 68px) sehingga foto naik
+// tepat ke tepi atas halaman dan navbar putih "mengapung" di atas foto.
 defineEmits(['buka-modal'])
+
+const janji = ['Gratis & tanpa login', 'Bahasa sehari-hari', 'Berbasis dalil & KHI']
 </script>
 
 <template>
-  <section class="relative overflow-hidden bg-paper">
-    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 grid gap-12 lg:grid-cols-2 items-center">
-      <div>
-        <span
-          class="inline-flex items-center gap-2 text-xs font-extrabold bg-waris-900/10 border border-waris-900/15 text-waris-900 px-4 py-2 rounded-full"
-        >
-          <i class="fa-solid fa-mosque text-waris-800"></i> AI-Powered Islamic Inheritance Assistant
-        </span>
-        <h1 class="text-5xl sm:text-6xl font-bold leading-[1.05] mt-6 text-ink">
-          Pahami Waris Islam dengan
-          <span class="text-waris-900">Bercerita Saja.</span>
-        </h1>
-        <p class="mt-5 text-ink/65 leading-relaxed text-base sm:text-lg max-w-xl">
-          WarisMu mengubah cerita keluargamu dalam bahasa natural menjadi simulasi faraid yang
-          jelas — lengkap dengan tabel bagian, dalil, dan penjelasan yang mudah dipahami.
-        </p>
-        <div class="mt-8 flex flex-wrap gap-3">
-          <RouterLink
-            to="/chat"
-            class="inline-flex items-center gap-2 h-12 px-8 rounded-lg bg-waris-900 hover:scale-105 active:scale-95 text-white font-bold shadow-soft hover:shadow-float transition-all duration-300"
-          >
-            <i class="fa-solid fa-comments"></i> Mulai Konsultasi
-          </RouterLink>
-          <RouterLink
-            to="/panduan"
-            class="inline-flex items-center gap-2 h-12 px-8 rounded-lg bg-white/60 border border-waris-900/20 text-waris-900 font-bold hover:bg-white hover:scale-105 active:scale-95 transition-all duration-300"
-          >
-            <i class="fa-solid fa-book-open"></i> Pelajari Dulu
-          </RouterLink>
-          <button
-            class="inline-flex items-center gap-2 h-12 px-8 rounded-lg border border-waris-800 text-waris-800 font-bold hover:bg-waris-900/5 hover:scale-105 active:scale-95 transition-all duration-300"
-            @click="$emit('buka-modal')"
-          >
-            <i class="fa-solid fa-circle-question"></i> Apa itu Faraid?
-          </button>
-        </div>
-        <div class="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink/55 font-semibold">
-          <span><i class="fa-solid fa-check mr-2 text-waris-800"></i>Tanpa login bisa coba</span>
-          <span><i class="fa-solid fa-check mr-2 text-waris-800"></i>Bahasa natural santai</span>
-          <span><i class="fa-solid fa-check mr-2 text-waris-800"></i>Berbasis dalil &amp; KHI</span>
-        </div>
-      </div>
+  <section class="relative -mt-[5.25rem] overflow-hidden bg-waris-950">
+    <img
+      src="https://i.pinimg.com/736x/ea/6a/7a/ea6a7a55557685c0b00b78ed1e35a684.jpg"
+      alt="Keluarga Muslim berkumpul bersama di ruang tamu"
+      class="absolute inset-0 w-full h-full object-cover"
+    />
+    <!-- Lapisan gelap: kontras teks putih WCAG-safe -->
+    <div class="absolute inset-0 bg-waris-950/[0.72]"></div>
 
-      <div class="relative">
-        <img
-          src="https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=900&q=80"
-          alt="Keluarga muslim berdiskusi"
-          class="w-full h-64 sm:h-80 object-cover rounded-xl border border-waris-900/10 shadow-float"
-          loading="lazy"
-        />
-        <div
-          class="absolute -bottom-6 left-4 right-4 sm:left-6 sm:right-auto bg-cream border border-waris-900/10 rounded-lg shadow-soft px-5 py-4 flex items-center gap-4"
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-36 pb-20 sm:pt-44 sm:pb-28">
+      <span
+        class="inline-flex items-center gap-2 rounded-full bg-white/[0.12] border border-white/25 backdrop-blur px-4 py-2 text-xs font-extrabold tracking-wide text-white"
+      >
+        <i class="fa-solid fa-mosque text-waris-200"></i> Asisten Waris Islam Berbasis AI
+      </span>
+
+      <h1 class="mt-6 max-w-3xl text-4xl sm:text-6xl lg:text-7xl font-bold leading-[1.05] text-white">
+        Pahami Waris Islam dengan Bercerita Saja.
+      </h1>
+
+      <p class="mt-5 max-w-2xl text-base sm:text-lg leading-relaxed text-waris-50/85">
+        WarisMu mengubah cerita keluargamu dalam bahasa sehari-hari menjadi simulasi faraid yang
+        jelas lengkap dengan tabel bagian tiap ahli waris, dalil, dan penjelasan yang mudah
+        dipahami.
+      </p>
+
+      <!-- Kolom kapsul: pintu masuk utama ke /chat -->
+      <RouterLink
+        to="/chat"
+        class="group mt-8 flex items-center gap-3 w-full max-w-xl rounded-full bg-white pl-6 pr-2 py-2 shadow-float transition-all duration-300 hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-waris-300/60"
+      >
+        <span class="flex-1 min-w-0 truncate text-sm sm:text-base font-bold text-ink/55">
+          Ceritakan Warisan
+        </span>
+        <span
+          class="w-11 h-11 shrink-0 rounded-full bg-waris-900 text-white grid place-items-center transition-all duration-300 group-hover:bg-waris-800 group-hover:translate-x-0.5"
         >
-          <span class="w-12 h-12 shrink-0 rounded-full bg-waris-900 text-white grid place-items-center text-xl">
-            <i class="fa-solid fa-scale-balanced"></i>
-          </span>
-          <div>
-            <p class="text-xs text-ink/50 font-bold">Contoh simulasi</p>
-            <p class="font-extrabold text-sm text-ink">Anak Lk : Anak Pr = <span class="text-waris-900">2 : 1</span></p>
-            <p class="text-xs text-ink/50 font-semibold">QS. An-Nisa: 11</p>
-          </div>
-        </div>
+          <i class="fa-solid fa-arrow-right"></i>
+          <span class="sr-only">Mulai bercerita di halaman chat</span>
+        </span>
+      </RouterLink>
+
+      <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
+        <span v-for="j in janji" :key="j" class="text-xs sm:text-sm font-bold text-white/75">
+          <i class="fa-solid fa-circle-check mr-2 text-waris-300"></i>{{ j }}
+        </span>
+        <button
+          class="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-white/75 hover:text-white underline decoration-white/30 underline-offset-4 transition-colors duration-300"
+          @click="$emit('buka-modal')"
+        >
+          <i class="fa-solid fa-circle-question"></i> Belum kenal faraid? Apa itu Faraid?
+        </button>
       </div>
     </div>
   </section>

@@ -19,14 +19,14 @@ const langkah = [
 </script>
 
 <template>
-  <section class="bg-waris-100/30">
+  <section>
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
       <div class="text-center max-w-2xl mx-auto">
         <span class="text-xs font-extrabold tracking-widest text-waris-900 uppercase">
           <i class="fa-solid fa-route mr-2"></i>Cara Kerja
         </span>
         <h2 class="text-4xl sm:text-5xl font-bold mt-3 text-ink">Dari Cerita Menjadi Perhitungan</h2>
-        <p class="text-ink/60 mt-3">Tiga langkah sederhana — tanpa formulir rumit, tanpa istilah membingungkan.</p>
+        <p class="text-ink/60 mt-3">Tiga langkah sederhana tanpa formulir rumit, tanpa istilah membingungkan.</p>
       </div>
       <div class="relative grid gap-8 md:grid-cols-3 mt-12">
         <!-- Konektor lengkung antar langkah (desktop) -->
@@ -36,7 +36,7 @@ const langkah = [
         <div
           v-for="l in langkah"
           :key="l.judul"
-          class="relative bg-waris-950 text-white rounded-lg p-7 shadow-soft hover:-translate-y-1 transition-all duration-300"
+          class="relative bg-waris-950 text-white rounded-2xl p-7 shadow-soft hover:-translate-y-1 transition-all duration-300"
         >
           <span class="w-14 h-14 rounded-full bg-waris-500 grid place-items-center text-2xl mb-5">
             <i :class="l.ikon"></i>

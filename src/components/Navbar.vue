@@ -18,7 +18,7 @@ function aktif(path) {
 
 const tautan = [
   { path: '/', label: 'Beranda', ikon: 'fa-solid fa-house' },
-  { path: '/chat', label: 'Chat', ikon: 'fa-solid fa-comments', utama: true },
+  { path: '/chat', label: 'Chat', ikon: 'fa-solid fa-comments' },
   { path: '/tentang', label: 'Tentang', ikon: 'fa-solid fa-circle-info' },
   { path: '/panduan', label: 'Panduan', ikon: 'fa-solid fa-book-open' },
   { path: '/kontak', label: 'Kontak', ikon: 'fa-solid fa-envelope' },
@@ -31,7 +31,8 @@ const tombolDaftar = { path: '/daftar', label: 'Daftar Akun', ikon: 'fa-solid fa
 <template>
   <div class="sticky top-4 z-40 px-4 sm:px-6">
     <header
-      class="max-w-6xl mx-auto rounded-xl bg-white/70 backdrop-blur-md border border-waris-900/10 shadow-soft"
+      class="max-w-6xl mx-auto bg-white/90 backdrop-blur-md border border-waris-900/10 shadow-soft transition-all duration-300"
+      :class="menuBuka ? 'rounded-3xl' : 'rounded-full'"
     >
       <nav class="flex items-center justify-between px-4 sm:px-6 py-3">
         <RouterLink to="/" class="flex items-center gap-3" @click="tutupMenu">
@@ -41,7 +42,7 @@ const tombolDaftar = { path: '/daftar', label: 'Daftar Akun', ikon: 'fa-solid fa
             <i class="fa-solid fa-scale-balanced"></i>
           </span>
           <span class="leading-tight">
-            <span class="block font-bold text-lg text-ink">WarisMu</span>
+            <span class="block font-display font-bold text-lg text-ink">WarisMu</span>
             <span class="block text-xs text-ink/55 -mt-1 font-semibold">Asisten Waris Islam</span>
           </span>
         </RouterLink>
@@ -56,9 +57,7 @@ const tombolDaftar = { path: '/daftar', label: 'Daftar Akun', ikon: 'fa-solid fa
             :class="
               aktif(t.path)
                 ? 'bg-waris-900 text-white shadow-soft'
-                : t.utama
-                  ? 'bg-waris-900/10 text-waris-900 hover:bg-waris-900 hover:text-white'
-                  : 'text-ink/70 hover:bg-waris-900/10 hover:text-waris-900'
+                : 'text-ink/70 hover:bg-waris-900/10 hover:text-waris-900'
             "
           >
             <i :class="t.ikon" class="mr-2"></i>{{ t.label }}
@@ -94,9 +93,7 @@ const tombolDaftar = { path: '/daftar', label: 'Daftar Akun', ikon: 'fa-solid fa
               :class="
                 aktif(t.path)
                   ? 'bg-waris-900 text-white'
-                  : t.utama
-                    ? 'bg-waris-900/10 text-waris-900'
-                    : 'text-ink/75 hover:bg-waris-900/10 hover:text-waris-900'
+                  : 'text-ink/75 hover:bg-waris-900/10 hover:text-waris-900'
               "
               @click="tutupMenu"
             >
