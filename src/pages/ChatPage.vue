@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import ChatBubble from '../components/ChatBubble.vue'
 import ChatSidebar from '../components/ChatSidebar.vue'
 import PanelIcon from '../components/PanelIcon.vue'
@@ -22,7 +23,25 @@ let idCounter = Date.now()
 const KUNCI_RIWAYAT = 'warismu_riwayat_v1'
 const kunciSesi = (id) => `warismu_sesi_${id}`
 
+// ===== Status akun =====
+// Diisi halaman Daftar (/daftar) dan Masuk (/masuk) ke localStorage.
+// Tamu tetap boleh berkonsultasi, tapi percakapannya TIDAK disimpan:
+// tidak masuk daftar riwayat, dan hilang saat halaman dimuat ulang.
+function bacaPengguna() {
+  try {
+    const mentah = localStorage.getItem('warismu_user')
+    return mentah ? JSON.parse(mentah) : null
+  } catch {
+    return null
+  }
+}
+const pengguna = ref(bacaPengguna())
+const sudahMasuk = computed(() => !!pengguna.value)
+
 function muatRiwayat() {
+  // Tamu tidak memuat riwayat sama sekali. Isi localStorage dibiarkan utuh,
+  // jadi riwayat milik akun tidak hilang saat pengguna keluar (logout).
+  if (!bacaPengguna()) return []
   try {
     const mentah = localStorage.getItem(KUNCI_RIWAYAT)
     const arr = mentah ? JSON.parse(mentah) : []
@@ -32,6 +51,7 @@ function muatRiwayat() {
   }
 }
 function simpanRiwayat() {
+  if (!sudahMasuk.value) return
   try {
     localStorage.setItem(KUNCI_RIWAYAT, JSON.stringify(daftarRiwayat))
   } catch { /* abaikan: mode privat / storage penuh */ }
@@ -46,7 +66,8 @@ function bacaSesi(id) {
   }
 }
 function simpanSesiAktif() {
-  if (!sesiAktifId.value) return
+  // Tamu tidak punya sesi tersimpan — cukup di memori sampai halaman di-refresh.
+  if (!sudahMasuk.value || !sesiAktifId.value) return
   try {
     localStorage.setItem(kunciSesi(sesiAktifId.value), JSON.stringify(daftarPesan))
     // Catat waktu terakhir sesi diperbarui (dipakai daftar riwayat).
@@ -194,8 +215,9 @@ async function kirimPesan(teksLangsung = '') {
   const isi = (teksLangsung || pesanBaru.value).trim()
   if (!isi || sedangMengetik.value) return
 
-  // Pesan pertama = buat sesi baru + catat ke riwayat (local saja)
-  if (belumMulai.value) {
+  // Pesan pertama (hanya untuk user yang sudah masuk) = buat sesi baru
+  // + catat ke riwayat. Tamu: percakapan tetap jalan, riwayat tidak dicatat.
+  if (belumMulai.value && sudahMasuk.value) {
     const idBaru = 's' + Date.now()
     sesiAktifId.value = idBaru
     daftarRiwayat.unshift({
@@ -409,6 +431,16 @@ function hapusSemua() {
         <p class="text-sm text-ink/50 mt-3 max-w-md">
           Ceritakan kondisi keluargamu dengan bahasa sehari-hari — WarisMu akan membantu
           melengkapinya.
+        </p>
+
+        <!-- Tamu: beri tahu sejak awal bahwa riwayat tidak disimpan -->
+        <p
+          v-if="!sudahMasuk"
+          class="mt-4 inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full bg-waris-100 border border-waris-800/20 px-4 py-2 text-xs font-bold text-waris-800"
+        >
+          <i class="fa-solid fa-user-clock" aria-hidden="true"></i>
+          <span>Mode tamu — riwayat tidak disimpan.</span>
+          <RouterLink to="/daftar" class="underline hover:text-waris-900">Daftar akun</RouterLink>
         </p>
 
         <div class="w-full max-w-2xl mt-6">

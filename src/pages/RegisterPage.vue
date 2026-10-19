@@ -6,6 +6,7 @@ const router = useRouter()
 const nama = ref('')
 const email = ref('')
 const password = ref('')
+const lihatSandi = ref(false)
 const galat = ref('')
 const sibuk = ref(false)
 
@@ -43,9 +44,6 @@ async function daftar() {
         <i class="fa-solid fa-user-plus"></i>
       </span>
       <h1 class="font-bold text-2xl text-center mt-3">Daftar Akun WarisMu</h1>
-      <p class="text-sm text-ink/60 font-semibold text-center mt-1">
-        Simpan riwayat konsultasimu agar bisa dibuka lagi kapan saja.
-      </p>
 
       <form class="mt-6 space-y-3" @submit.prevent="daftar">
         <input
@@ -62,13 +60,26 @@ async function daftar() {
           autocomplete="email"
           class="w-full h-12 px-5 rounded-lg bg-white/70 border border-waris-900/20 outline-none text-sm focus:ring-2 focus:ring-waris-900/30 placeholder:text-ink/35"
         />
-        <input
-          v-model="password"
-          type="password"
-          placeholder="Password (min. 6 karakter)"
-          autocomplete="new-password"
-          class="w-full h-12 px-5 rounded-lg bg-white/70 border border-waris-900/20 outline-none text-sm focus:ring-2 focus:ring-waris-900/30 placeholder:text-ink/35"
-        />
+        <!-- Password + tombol lihat/sembunyikan -->
+        <div class="relative">
+          <input
+            v-model="password"
+            :type="lihatSandi ? 'text' : 'password'"
+            placeholder="Password (min. 6 karakter)"
+            autocomplete="new-password"
+            class="w-full h-12 pl-5 pr-14 rounded-lg bg-white/70 border border-waris-900/20 outline-none text-sm focus:ring-2 focus:ring-waris-900/30 placeholder:text-ink/35"
+          />
+          <button
+            type="button"
+            class="absolute right-1.5 top-1/2 -translate-y-1/2 w-10 h-10 grid place-items-center rounded-lg text-ink/45 hover:text-waris-900 hover:bg-waris-900/10 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-900/30"
+            :aria-label="lihatSandi ? 'Sembunyikan password' : 'Tampilkan password'"
+            :aria-pressed="lihatSandi"
+            :title="lihatSandi ? 'Sembunyikan password' : 'Tampilkan password'"
+            @click="lihatSandi = !lihatSandi"
+          >
+            <i :class="lihatSandi ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+          </button>
+        </div>
         <p v-if="galat" class="text-xs font-bold text-danger bg-danger-soft border border-danger/25 rounded-lg px-4 py-3">
           <i class="fa-solid fa-circle-exclamation mr-2"></i>{{ galat }}
         </p>
@@ -84,7 +95,7 @@ async function daftar() {
 
       <p class="text-xs text-ink/55 font-semibold text-center mt-4">
         Sudah punya akun?
-        <RouterLink to="/chat" class="text-waris-900 font-extrabold hover:underline">Langsung konsultasi sebagai tamu</RouterLink>
+        <RouterLink to="/masuk" class="text-waris-900 font-extrabold hover:underline">Masuk di sini</RouterLink>
       </p>
     </div>
   </div>

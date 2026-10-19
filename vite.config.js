@@ -120,7 +120,7 @@ function apiLokalDev() {
       server.httpServer?.once('listening', () => {
         const { logger } = server.config
         const tanda = (kunci) => (process.env[kunci] ? 'terisi' : 'KOSONG')
-        logger.info('  API lokal: POST /api/chat + POST /api/auth/register aktif')
+        logger.info('  API lokal: /api/chat + /api/auth/register + /api/auth/login aktif')
         logger.info(
           `  Kunci api : GEMINI_API_KEY ${tanda('GEMINI_API_KEY')} | DATABASE_URL ${tanda('DATABASE_URL')} | JWT_SECRET ${tanda('JWT_SECRET')}`,
         )

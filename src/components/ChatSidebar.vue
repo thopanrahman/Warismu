@@ -307,16 +307,21 @@ const kelompok = computed(() =>
           </div>
           <RouterLink
             v-else
-            to="/daftar"
-            class="flex items-center gap-3 bg-white/10 hover:bg-white/15 rounded-xl px-3 py-3 transition-colors duration-200"
+            to="/masuk"
+            class="flex items-start gap-3 bg-white/10 hover:bg-white/15 rounded-xl px-3 py-3 transition-colors duration-200"
             @click="$emit('tutup')"
           >
             <span
               class="w-9 h-9 rounded-full bg-waris-500 text-white grid place-items-center text-xs shrink-0"
             >
-              <i class="fa-solid fa-user-plus"></i>
+              <i class="fa-solid fa-right-to-bracket"></i>
             </span>
-            <span class="text-sm font-extrabold">Daftar / Masuk</span>
+            <span class="min-w-0">
+              <span class="block text-sm font-extrabold">Masuk / Daftar</span>
+              <span class="block text-[11px] font-semibold text-waris-100/55 mt-0.5 leading-snug">
+                Mode tamu: riwayat tidak disimpan.
+              </span>
+            </span>
           </RouterLink>
         </div>
       </aside>

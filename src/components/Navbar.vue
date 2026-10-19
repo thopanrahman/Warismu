@@ -24,8 +24,14 @@ const tautan = [
   { path: '/kontak', label: 'Kontak', ikon: 'fa-solid fa-envelope' },
 ]
 
-// DESIGN.md §4.1: menu "Daftar Akun" wajib terlihat jelas sebagai tombol primary bg-waris-900
+// DESIGN.md §4.1: "Daftar Akun" tetap tombol primary bg-waris-900.
+// Ukurannya sekarang disamakan dengan menu tengah (tidak lagi lebih besar
+// dan tidak lagi memakai tinggi h-11 tersendiri).
 const tombolDaftar = { path: '/daftar', label: 'Daftar Akun', ikon: 'fa-solid fa-user-plus' }
+const tombolMasuk = { path: '/masuk', label: 'Masuk', ikon: 'fa-solid fa-right-to-bracket' }
+
+// Satu ukuran untuk menu tengah maupun tombol akun, supaya tinggi & padding sama.
+const kelasTautan = 'px-3 lg:px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-all duration-300'
 </script>
 
 <template>
@@ -34,7 +40,8 @@ const tombolDaftar = { path: '/daftar', label: 'Daftar Akun', ikon: 'fa-solid fa
       class="max-w-6xl mx-auto bg-white/90 backdrop-blur-md border border-waris-900/10 shadow-soft transition-all duration-300"
       :class="menuBuka ? 'rounded-3xl' : 'rounded-full'"
     >
-      <nav class="flex items-center justify-between px-4 sm:px-6 py-3">
+      <!-- Tiga kolom: logo kiri, menu di tengah, akun di kanan -->
+      <nav class="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 sm:px-6 py-3">
         <RouterLink to="/" class="flex items-center gap-3" @click="tutupMenu">
           <span
             class="w-10 h-10 rounded-full bg-waris-900 text-white grid place-items-center text-xl shadow-soft"
@@ -47,32 +54,47 @@ const tombolDaftar = { path: '/daftar', label: 'Daftar Akun', ikon: 'fa-solid fa
           </span>
         </RouterLink>
 
-        <!-- Menu desktop + tombol Daftar Akun (primary) -->
-        <div class="hidden md:flex items-center gap-1">
+        <!-- Menu utama: tepat di tengah -->
+        <div class="hidden md:flex items-center justify-center gap-0.5 lg:gap-1">
           <RouterLink
             v-for="t in tautan"
             :key="t.path"
             :to="t.path"
-            class="px-4 py-2 rounded-lg text-sm font-bold transition-all duration-300"
-            :class="
+            :class="[
+              kelasTautan,
               aktif(t.path)
                 ? 'bg-waris-900 text-white shadow-soft'
-                : 'text-ink/70 hover:bg-waris-900/10 hover:text-waris-900'
-            "
+                : 'text-ink/70 hover:bg-waris-900/10 hover:text-waris-900',
+            ]"
           >
-            <i :class="t.ikon" class="mr-2"></i>{{ t.label }}
+            <i :class="t.ikon" class="hidden lg:inline mr-2"></i>{{ t.label }}
+          </RouterLink>
+        </div>
+
+        <!-- Akun: Masuk + Daftar Akun, seukuran menu tengah, rata kanan -->
+        <div class="hidden md:flex items-center justify-end gap-0.5 lg:gap-1">
+          <RouterLink
+            :to="tombolMasuk.path"
+            :class="[
+              kelasTautan,
+              aktif(tombolMasuk.path)
+                ? 'bg-waris-900/10 text-waris-900'
+                : 'text-ink/70 hover:bg-waris-900/10 hover:text-waris-900',
+            ]"
+          >
+            {{ tombolMasuk.label }}
           </RouterLink>
           <RouterLink
             :to="tombolDaftar.path"
-            class="ml-1 inline-flex items-center h-11 px-5 rounded-lg bg-waris-900 text-white text-sm font-bold shadow-soft hover:bg-waris-800 active:scale-95 transition-all duration-300"
+            :class="[kelasTautan, 'bg-waris-900 text-white shadow-soft hover:bg-waris-800 active:scale-95']"
           >
-            <i :class="tombolDaftar.ikon" class="mr-2"></i>{{ tombolDaftar.label }}
+            {{ tombolDaftar.label }}
           </RouterLink>
         </div>
 
         <!-- Tombol hamburger (mobile) -->
         <button
-          class="md:hidden w-11 h-11 grid place-items-center rounded-full border border-waris-900/20 text-waris-900 hover:bg-waris-900/10 transition-all duration-300 active:scale-95"
+          class="md:hidden justify-self-end w-11 h-11 grid place-items-center rounded-full border border-waris-900/20 text-waris-900 hover:bg-waris-900/10 transition-all duration-300 active:scale-95"
           :aria-expanded="menuBuka"
           aria-label="Buka/tutup menu navigasi"
           @click="toggleMenu"
@@ -100,8 +122,20 @@ const tombolDaftar = { path: '/daftar', label: 'Daftar Akun', ikon: 'fa-solid fa
               <i :class="t.ikon" class="w-5 text-center"></i>{{ t.label }}
             </RouterLink>
             <RouterLink
+              :to="tombolMasuk.path"
+              class="px-4 py-3 rounded-lg text-sm font-bold flex items-center gap-3 transition-all duration-300"
+              :class="
+                aktif(tombolMasuk.path)
+                  ? 'bg-waris-900/10 text-waris-900'
+                  : 'text-ink/75 hover:bg-waris-900/10 hover:text-waris-900'
+              "
+              @click="tutupMenu"
+            >
+              <i :class="tombolMasuk.ikon" class="w-5 text-center"></i>{{ tombolMasuk.label }}
+            </RouterLink>
+            <RouterLink
               :to="tombolDaftar.path"
-              class="mt-1 px-4 py-3 rounded-lg bg-waris-900 text-white text-sm font-bold flex items-center gap-3 active:scale-95 transition-all duration-300"
+              class="px-4 py-3 rounded-lg bg-waris-900 text-white text-sm font-bold flex items-center gap-3 active:scale-95 transition-all duration-300"
               @click="tutupMenu"
             >
               <i :class="tombolDaftar.ikon" class="w-5 text-center"></i>{{ tombolDaftar.label }}
