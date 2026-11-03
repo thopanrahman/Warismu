@@ -43,7 +43,7 @@ const artikelUnggulan = daftarPanduan.slice(0, 3)
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
       <div class="text-center max-w-2xl mx-auto">
         <span class="text-xs font-extrabold tracking-widest text-waris-900 uppercase">
-          <i class="fa-solid fa-sparkles mr-2"></i>Fitur Utama
+          <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Fitur Utama
         </span>
         <h2 class="text-4xl sm:text-5xl font-bold mt-4 text-ink">Kenapa Memilih WarisMu?</h2>
         <p class="text-ink/60 mt-4">

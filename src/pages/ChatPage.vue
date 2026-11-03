@@ -4,6 +4,8 @@ import { RouterLink } from 'vue-router'
 import ChatBubble from '../components/ChatBubble.vue'
 import ChatSidebar from '../components/ChatSidebar.vue'
 import PanelIcon from '../components/PanelIcon.vue'
+import BrandLogo from '../components/BrandLogo.vue'
+import { ambilPengguna, keluarAkun, panggilApi } from '../lib/akun.js'
 
 // ============ STATE ============
 // Mulai kosongan ala DeepSeek/ChatGPT: tidak ada sapaan bot, tidak ada mock.
@@ -13,80 +15,133 @@ const sedangMengetik = ref(false)
 const galatApi = ref('')
 const teksGagal = ref('')
 const konfirmasiHapus = ref(false)
-// Di desktop sidebar tampil terbuka sejak awal; di layar kecil default tertutup (drawer).
-const layarBesar = typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
-const sidebarTerbuka = ref(layarBesar)
+// Sidebar awalnya TERTUTUP di semua ukuran layar. Halaman chat dibuka dengan
+// kolom percakapan bersih; user sendiri yang memilih membuka sidebar riwayat.
+const sidebarTerbuka = ref(false)
 const kataKunci = ref('')
 const areaPesan = ref(null)
 let idCounter = Date.now()
 
-const KUNCI_RIWAYAT = 'warismu_riwayat_v1'
-const kunciSesi = (id) => `warismu_sesi_${id}`
-
 // ===== Status akun =====
-// Diisi halaman Daftar (/daftar) dan Masuk (/masuk) ke localStorage.
-// Tamu tetap boleh berkonsultasi, tapi percakapannya TIDAK disimpan:
-// tidak masuk daftar riwayat, dan hilang saat halaman dimuat ulang.
-function bacaPengguna() {
-  try {
-    const mentah = localStorage.getItem('warismu_user')
-    return mentah ? JSON.parse(mentah) : null
-  } catch {
-    return null
-  }
-}
-const pengguna = ref(bacaPengguna())
+// Token & profil disimpan src/lib/akun.js saat Daftar/Masuk. Tamu tetap boleh
+// berkonsultasi, tapi percakapannya TIDAK disimpan ke server: tidak masuk daftar
+// riwayat, dan hilang saat halaman dimuat ulang.
+const pengguna = ref(ambilPengguna())
 const sudahMasuk = computed(() => !!pengguna.value)
 
-function muatRiwayat() {
-  // Tamu tidak memuat riwayat sama sekali. Isi localStorage dibiarkan utuh,
-  // jadi riwayat milik akun tidak hilang saat pengguna keluar (logout).
-  if (!bacaPengguna()) return []
-  try {
-    const mentah = localStorage.getItem(KUNCI_RIWAYAT)
-    const arr = mentah ? JSON.parse(mentah) : []
-    return Array.isArray(arr) ? arr : []
-  } catch {
-    return []
+// ===== Riwayat konsultasi (Supabase, bukan localStorage) =====
+// Daftar sesi + isi percakapannya diambil dari GET /api/riwayat. Isi pesan
+// disimpan di memori agar pencarian di sidebar dan buka-sesi terasa instan.
+const daftarRiwayat = reactive([])
+const sesiAktifId = ref(null)
+const judulSesiAktif = ref('')
+const sesiTersimpan = reactive({})
+const memuatRiwayat = ref(false)
+const galatRiwayat = ref('')
+
+// Field yang ikut dikirim ke server — jangan kirim id internal atau properti
+// tampilan (itu bukan data konsultasi).
+function ringkasPesan(p) {
+  return {
+    peran: p.peran,
+    teks: p.teks,
+    hasil: p.hasil ?? null,
+    sumber: p.sumber ?? null,
+    disclaimer: p.disclaimer ?? null,
+    dilapor: p.dilapor === true,
+    mock: p.mock === true,
   }
-}
-function simpanRiwayat() {
-  if (!sudahMasuk.value) return
-  try {
-    localStorage.setItem(KUNCI_RIWAYAT, JSON.stringify(daftarRiwayat))
-  } catch { /* abaikan: mode privat / storage penuh */ }
-}
-function bacaSesi(id) {
-  try {
-    const mentah = localStorage.getItem(kunciSesi(id))
-    const arr = mentah ? JSON.parse(mentah) : []
-    return Array.isArray(arr) ? arr : []
-  } catch {
-    return []
-  }
-}
-function simpanSesiAktif() {
-  // Tamu tidak punya sesi tersimpan — cukup di memori sampai halaman di-refresh.
-  if (!sudahMasuk.value || !sesiAktifId.value) return
-  try {
-    localStorage.setItem(kunciSesi(sesiAktifId.value), JSON.stringify(daftarPesan))
-    // Catat waktu terakhir sesi diperbarui (dipakai daftar riwayat).
-    const item = daftarRiwayat.find((r) => r.id === sesiAktifId.value)
-    if (item) {
-      item.waktu = Date.now()
-      simpanRiwayat()
-    }
-  } catch { /* abaikan */ }
 }
 
-// Riwayat sidebar: mulai kosong, disimpan di local saja (Desweb, belum backend).
-const daftarRiwayat = reactive(muatRiwayat())
-const sesiAktifId = ref(null)
+// Token kedaluwarsa / tidak sah → kembali ke mode tamu, bukan layar error.
+function sesiHabis() {
+  keluarAkun()
+  pengguna.value = null
+  daftarRiwayat.splice(0)
+  Object.keys(sesiTersimpan).forEach((k) => delete sesiTersimpan[k])
+  sesiAktifId.value = null
+}
+
+async function muatRiwayatServer() {
+  if (!sudahMasuk.value) return
+  memuatRiwayat.value = true
+  galatRiwayat.value = ''
+  try {
+    const { ok, status, data } = await panggilApi('/api/riwayat')
+    if (status === 401) return sesiHabis()
+    if (!ok) throw new Error('HTTP ' + status)
+    daftarRiwayat.splice(0)
+    Object.keys(sesiTersimpan).forEach((k) => delete sesiTersimpan[k])
+    for (const s of data.daftar ?? []) {
+      sesiTersimpan[s.id] = Array.isArray(s.pesan) ? s.pesan : []
+      daftarRiwayat.push({ id: s.id, judul: s.judul, waktu: s.waktu, jumlah: s.jumlah ?? 0 })
+    }
+  } catch {
+    galatRiwayat.value = 'Riwayat tidak bisa dimuat dari server. Periksa koneksi.'
+  } finally {
+    memuatRiwayat.value = false
+  }
+}
+
+// Simpan seluruh percakapan aktif. Dipanggil setiap ada pesan baru, jadi sesi
+// pertama otomatis dibuat di server dan ID-nya dipakai untuk pembaruan berikutnya.
+// Permintaan disimpan berurutan (antrean) supaya pesan pertama tidak sempat
+// membuat dua sesi gara-gara dua penyimpanan berjalan bersamaan.
+let antreanSimpan = Promise.resolve()
+function simpanSesiAktif() {
+  antreanSimpan = antreanSimpan.then(simpanSesiSekarang).catch(() => {})
+  return antreanSimpan
+}
+
+async function simpanSesiSekarang() {
+  if (!sudahMasuk.value || !daftarPesan.length) return
+  const judul = judulSesiAktif.value || potongJudul(daftarPesan[0]?.teks || 'Konsultasi')
+  try {
+    const { ok, status, data } = await panggilApi('/api/riwayat', {
+      method: 'POST',
+      body: JSON.stringify({
+        id: sesiAktifId.value,
+        judul,
+        pesan: daftarPesan.map(ringkasPesan),
+      }),
+    })
+    if (status === 401) return sesiHabis()
+    if (!ok || !data.id) throw new Error('HTTP ' + status)
+
+    if (!sesiAktifId.value) {
+      sesiAktifId.value = data.id
+      judulSesiAktif.value = judul
+      daftarRiwayat.unshift({ id: data.id, judul, waktu: Date.now(), jumlah: daftarPesan.length })
+    } else {
+      const item = daftarRiwayat.find((r) => r.id === sesiAktifId.value)
+      if (item) {
+        item.waktu = Date.now()
+        item.jumlah = daftarPesan.length
+      }
+    }
+    sesiTersimpan[sesiAktifId.value] = daftarPesan.map(ringkasPesan)
+    galatRiwayat.value = ''
+  } catch {
+    galatRiwayat.value = 'Riwayat belum tersimpan ke server. Periksa koneksi.'
+  }
+}
+
+// Menutup sesi (UC-13): tandai 'selesai' beserta waktu berakhirnya.
+function akhiriSesi() {
+  const id = sesiAktifId.value
+  if (!sudahMasuk.value || !id) return
+  panggilApi('/api/riwayat', {
+    method: 'POST',
+    body: JSON.stringify({ id, selesai: true }),
+  }).catch(() => {})
+}
 
 // Percakapan aktif: selalu mulai kosong. Sengaja TIDAK dipulihkan saat refresh.
 const daftarPesan = reactive([])
 
 const belumMulai = computed(() => daftarPesan.length === 0)
+// Tombol kirim mati saat pesan kosong ATAU saat AI masih membalas (anti-spam klik).
+const kirimNonaktif = computed(() => sedangMengetik.value || !pesanBaru.value.trim())
 
 // ============ PENCARIAN SESI (judul + isi percakapan) ============
 function cuplikanSekitar(teks, kunci) {
@@ -108,56 +163,20 @@ const riwayatTampil = computed(() => {
   return daftarRiwayat
     .map((r) => {
       const judulCocok = String(r.judul || '').toLowerCase().includes(kunci)
-      const cocok = bacaSesi(r.id).find((p) => String(p.teks || '').toLowerCase().includes(kunci))
+      const cocok = (sesiTersimpan[r.id] || []).find((p) =>
+        String(p.teks || '').toLowerCase().includes(kunci),
+      )
       if (!judulCocok && !cocok) return null
       return { ...r, cuplikan: cocok ? cuplikanSekitar(cocok.teks, kunci) : '' }
     })
     .filter(Boolean)
 })
 
-// ============ FALLBACK OFFLINE (dipakai jika /api/chat tak terjangkau) ============
-function rupiah(n) {
-  return 'Rp' + n.toLocaleString('id-ID')
-}
-
-function buatBalasanMock(teksUser) {
-  const t = teksUser.toLowerCase()
-
-  // Simulasi hasil perhitungan lengkap (FR-07 s/d FR-14)
-  if (t.includes('500') || t.includes('rp') || /\d/.test(t)) {
-    return {
-      teks: `Baik, saya simulasikan dengan asumsi: pewaris (ayah) wafat meninggalkan ibu, istri, 1 anak laki-laki, dan 2 anak perempuan. Tirkah Rp500 juta (sudah bersih dari hutang & wasiat — mohon konfirmasi jika belum!).\n\nCatatan: hutang pewaris & wasiat (maks. 1/3) wajib diselesaikan dulu sebelum faraid (FR-04). Apakah pewaris masih punya hutang?`,
-      hasil: {
-        judul: 'Simulasi Faraid — Tirkah Rp500 juta (mock)',
-        bagian: [
-          { nama: 'Ibu', porsi: '1/6 (ada anak)', nominal: rupiah(83_333_333) },
-          { nama: 'Istri', porsi: '1/8 (ada anak)', nominal: rupiah(62_500_000) },
-          { nama: 'Anak laki-laki', porsi: 'ashabah — 2× anak pr', nominal: rupiah(141_666_667) },
-          { nama: 'Anak pr @1', porsi: 'ashabah — ½ anak lk', nominal: rupiah(70_833_333) },
-          { nama: 'Anak pr @2', porsi: 'ashabah — ½ anak lk', nominal: rupiah(70_833_333) },
-        ],
-        catatan: 'Total terbagi ± Rp429,16 jt. Angka mock untuk demo — backend LLM menghitung presisi + kasus aul/radd.',
-      },
-      sumber: 'QS. An-Nisa: 11–12; KHI Pasal 175–177 (FR-11)',
-      disclaimer: 'Hasil ini simulasi edukatif, bukan fatwa/putusan hukum. Konsultasikan ke ahli faraid atau Pengadilan Agama. (FR-12)',
-    }
-  }
-  if (t.includes('ashabah')) {
-    return {
-      teks: `Ashabah adalah ahli waris yang mengambil sisa harta setelah ashabul furudh (pemilik bagian pasti) menerima bagiannya — atau seluruh harta jika tidak ada ashabul furudh.\n\nContoh: anak laki-laki menjadi ashabah; ayah bisa jadi ashabah bila tidak ada anak laki-laki. Ada yang ingin disimulasikan dari kasus keluargamu?`,
-      sumber: 'QS. An-Nisa: 11; kitab-kitab faraid (FR-11)',
-      disclaimer: 'Penjelasan edukatif — bukan pengganti ahli faraid. (FR-12)',
-    }
-  }
-  if (t.includes('anak') && (t.includes('istri') || t.includes('ibu'))) {
-    return {
-      teks: `Terima kasih, data ahli waris tercatat: ${t.includes('istri') ? 'istri ✓' : ''} ${t.includes('ibu') ? 'ibu ✓' : ''} ${t.includes('anak') ? 'anak ✓' : ''}.\n\nAgar simulasi akurat (FR-04), saya masih butuh:\n1. Apakah pewaris (ayah/ibu) masih punya orang tua yang hidup?\n2. Berapa total harta bersih (setelah hutang & wasiat)?\n3. Ada wasiat? (maks. 1/3 harta)`,
-    }
-  }
-  return {
-    teks: `Bisa diperjelas sedikit? (FR-05) Ceritakan dengan format santai, contoh:\n\n"Pewaris [ayah/ibu] wafat, meninggalkan [daftar keluarga], harta [nominal], hutang [ada/tidak], wasiat [ada/tidak]".`,
-  }
-}
+// ============ SERVER TIDAK TERJANGKAU ============
+// Tidak ada balasan tiruan. Kalau /api/chat tidak bisa dijangkau, user hanya
+// diberi tahu bahwa koneksi terputus — bukan disodori angka waris karangan.
+const PESAN_SERVER_PUTUS =
+  'Koneksi ke server terputus. Silakan periksa internet Anda dan coba lagi.'
 
 function potongJudul(teks) {
   const bersih = teks.replace(/\s+/g, ' ').trim()
@@ -166,6 +185,22 @@ function potongJudul(teks) {
 
 function ringkasRiwayat() {
   return daftarPesan.slice(-10).map((p) => ({ peran: p.peran, teks: p.teks }))
+}
+
+// Server sengaja membalas HTTP 200 walau mesin AI atau mesin hitung gagal
+// (agar demo tidak menampilkan layar error). Konsekuensinya user harus
+// diberi tahu bahwa balasan itu mock, bukan hasil Gemini/Faraidh sungguhan.
+function pesanMockServer(alasan) {
+  if (alasan === 'mesin-hitung') {
+    return (
+      'Data keluarga sudah tercatat, tetapi mesin hitung faraid di server sedang tidak aktif, ' +
+      'jadi angka pembagian belum bisa ditampilkan. Coba lagi beberapa saat lagi.'
+    )
+  }
+  return (
+    'Balasan ini dibuat tanpa AI (mode mock), jadi ceritamu belum benar-benar diproses. ' +
+    'Periksa konfigurasi GEMINI_API_KEY di server, lalu tekan Coba lagi.'
+  )
 }
 
 // Minta jawaban asisten untuk satu pesan pengguna (dipakai kirim & coba ulang).
@@ -186,6 +221,7 @@ async function mintaJawaban(isi) {
     if (data.tanya_lanjutan?.length && !data.selesai) {
       teks += '\n\n' + data.tanya_lanjutan.map((t, i) => `${i + 1}. ${t}`).join('\n')
     }
+    const mock = data.dipakaiMock === true
     daftarPesan.push({
       id: ++idCounter,
       peran: 'bot',
@@ -194,16 +230,18 @@ async function mintaJawaban(isi) {
       hasil: data.hasil ?? null,
       sumber: data.sumber,
       disclaimer: data.disclaimer,
+      ...(mock ? { mock: true } : {}),
     })
-    galatApi.value = ''
+    if (mock) {
+      galatApi.value = pesanMockServer(data.alasanMock)
+      teksGagal.value = isi
+    }
   } catch {
     // DESIGN.md §4.2 — state Error: pesan error dengan border merah.
-    // Mock Fallback tetap dipakai agar percakapan tidak buntu saat API key belum diset.
-    galatApi.value =
-      'Koneksi ke server gagal. Balasan di bawah ini dihasilkan mode luring (mock lokal), bukan dari Gemini.'
+    // Sengaja TIDAK membuat balasan tiruan: user hanya diberi tahu koneksi
+    // terputus, lalu bisa menekan "Coba lagi".
+    galatApi.value = PESAN_SERVER_PUTUS
     teksGagal.value = isi
-    const balasan = buatBalasanMock(isi) // offline / API down → mock lokal
-    daftarPesan.push({ id: ++idCounter, peran: 'bot', dilapor: false, mock: true, ...balasan })
   } finally {
     sedangMengetik.value = false
     gulirBawah()
@@ -213,20 +251,18 @@ async function mintaJawaban(isi) {
 
 async function kirimPesan(teksLangsung = '') {
   const isi = (teksLangsung || pesanBaru.value).trim()
-  if (!isi || sedangMengetik.value) return
+  // Validasi: tolak pesan kosong / hanya berisi spasi.
+  if (!isi) return
+  // Anti-spam: jangan kirim pesan baru selama AI masih membalas.
+  if (sedangMengetik.value) return
 
-  // Pesan pertama (hanya untuk user yang sudah masuk) = buat sesi baru
-  // + catat ke riwayat. Tamu: percakapan tetap jalan, riwayat tidak dicatat.
+  // Pesan pertama (hanya untuk user yang sudah masuk) = sesi baru di server.
+  // ID sesi diisi dari balikan POST /api/riwayat saat pesan pertama disimpan.
+  // Tamu: percakapan tetap jalan, riwayat tidak dicatat.
   if (belumMulai.value && sudahMasuk.value) {
-    const idBaru = 's' + Date.now()
-    sesiAktifId.value = idBaru
-    daftarRiwayat.unshift({
-      id: idBaru,
-      judul: potongJudul(isi),
-      grup: 'Hari ini',
-      waktu: Date.now(),
-    })
-    simpanRiwayat()
+    sesiAktifId.value = null
+    judulSesiAktif.value = potongJudul(isi)
+    galatRiwayat.value = ''
   }
 
   daftarPesan.push({ id: ++idCounter, peran: 'user', teks: isi })
@@ -235,7 +271,8 @@ async function kirimPesan(teksLangsung = '') {
   gulirBawah()
   simpanSesiAktif()
 
-  // Coba backend sungguhan dulu (UC-07/08/09 via Gemini), gagal → mock lokal
+  // Kirim ke backend sungguhan (UC-07/08/09 via Gemini). Bila gagal dijangkau,
+  // user diberi pesan koneksi terputus — tanpa balasan tiruan.
   await mintaJawaban(isi)
 }
 
@@ -247,12 +284,28 @@ function cobaUlang() {
   mintaJawaban(teksGagal.value)
 }
 
-function laporkan(id) {
+// FR-19 / UC-14: laporan jawaban AI dicatat ke tabel reports, bukan cuma
+// penanda di layar. Tamu tidak punya akun di server, jadi laporan hanya
+// ditandai di layar (tidak ada yang bisa dihubungkan ke akun).
+async function laporkan(id) {
   const b = daftarPesan.find((p) => p.id === id)
-  if (b) {
-    b.dilapor = !b.dilapor // FR-19 mock: toggle status laporan
-    simpanSesiAktif()
+  if (!b) return
+  const sebelumnya = b.dilapor
+  b.dilapor = !sebelumnya
+  if (!sudahMasuk.value) return
+
+  const { ok, status } = await panggilApi('/api/laporan', {
+    method: 'POST',
+    body: JSON.stringify({ alasan: `Jawaban nomor ${daftarPesan.indexOf(b) + 1}: ${b.teks.slice(0, 200)}` }),
+  })
+  if (status === 401) return sesiHabis()
+  if (!ok) {
+    b.dilapor = sebelumnya
+    galatRiwayat.value = 'Laporan gagal dikirim ke server. Coba lagi.'
+    return
   }
+  galatRiwayat.value = ''
+  simpanSesiAktif()
 }
 
 // ============ INTERAKSI UI ============
@@ -273,13 +326,7 @@ function autoResize() {
   })
 }
 
-function saatKeydown(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    kirimPesan()
-  }
-}
-
+// Enter = kirim. Shift+Enter tetap baris baru karena handler memakai modifier .exact.
 // Escape: tutup dialog konfirmasi, lalu drawer sidebar (hanya di layar kecil).
 function saatEscape(e) {
   if (e.key !== 'Escape') return
@@ -290,7 +337,12 @@ function saatEscape(e) {
   const layarKecil = window.matchMedia('(max-width: 767px)').matches
   if (layarKecil && sidebarTerbuka.value) sidebarTerbuka.value = false
 }
-onMounted(() => window.addEventListener('keydown', saatEscape))
+onMounted(() => {
+  window.addEventListener('keydown', saatEscape)
+  // Riwayat diambil dari server saat halaman dibuka (UC-04). Percakapan aktif
+  // tetap mulai kosong: refresh tidak memulihkan sesi yang sedang berjalan.
+  muatRiwayatServer()
+})
 onUnmounted(() => window.removeEventListener('keydown', saatEscape))
 
 // Di layar kecil sidebar berperan sebagai drawer, jadi wajar ditutup setelah aksi.
@@ -300,9 +352,12 @@ function tutupDrawerKecil() {
 }
 
 // Menutup sidebar TIDAK menghapus sesi / pesan / kata kunci pencarian.
-function sesiBaru() {
+// Sesi yang ditinggalkan ditandai selesai di server (UC-13).
+function sesiBaru(tutupSesi = true) {
+  if (tutupSesi) akhiriSesi()
   daftarPesan.splice(0)
   sesiAktifId.value = null
+  judulSesiAktif.value = ''
   pesanBaru.value = ''
   galatApi.value = ''
   teksGagal.value = ''
@@ -310,38 +365,53 @@ function sesiBaru() {
 }
 
 function pilihRiwayat(r) {
+  akhiriSesi()
   sesiAktifId.value = r.id
+  judulSesiAktif.value = r.judul
   tutupDrawerKecil()
+  galatApi.value = ''
+  teksGagal.value = ''
   daftarPesan.splice(0)
-  const tersimpan = bacaSesi(r.id)
+  const tersimpan = sesiTersimpan[r.id] || []
   if (tersimpan.length) {
-    tersimpan.forEach((p) => daftarPesan.push(p))
+    tersimpan.forEach((p) => daftarPesan.push({ ...p, id: ++idCounter }))
   } else {
     daftarPesan.push({
       id: ++idCounter,
       peran: 'bot',
-      teks: `Membuka riwayat "${r.judul}". Isi percakapan sesi ini tersimpan lokal di browser ini.`,
+      teks: `Sesi "${r.judul}" tersimpan di akunmu, tetapi isi percakapannya belum terekam.`,
     })
   }
   gulirBawah()
 }
 
-// Tombol "Hapus riwayat" → minta konfirmasi dulu (Batal / Hapus semua).
-function hapusSemua() {
-  try {
-    daftarRiwayat.forEach((r) => localStorage.removeItem(kunciSesi(r.id)))
-  } catch { /* abaikan */ }
-  daftarRiwayat.splice(0)
-  simpanRiwayat()
-  kataKunci.value = ''
+// Tombol "Hapus riwayat" → konfirmasi dulu (Batal / Hapus semua), lalu
+// DELETE /api/riwayat menghapus seluruh sesi akun ini di server (UC-15).
+async function hapusSemua() {
   konfirmasiHapus.value = false
-  sesiBaru()
+  if (!sudahMasuk.value) {
+    daftarRiwayat.splice(0)
+    sesiBaru(false)
+    return
+  }
+  const { ok, status } = await panggilApi('/api/riwayat', { method: 'DELETE' })
+  if (status === 401) return sesiHabis()
+  if (!ok) {
+    galatRiwayat.value = 'Gagal menghapus riwayat di server. Coba lagi.'
+    return
+  }
+  galatRiwayat.value = ''
+  daftarRiwayat.splice(0)
+  Object.keys(sesiTersimpan).forEach((k) => delete sesiTersimpan[k])
+  kataKunci.value = ''
+  sesiBaru(false)
 }
 </script>
 
 <template>
   <div
-    class="h-[calc(100vh-6.5rem)] md:h-[calc(100vh-6rem)] flex gap-4 px-4 sm:px-6 pb-4 max-w-7xl mx-auto w-full"
+    class="h-[calc(100vh-6.5rem)] md:h-[calc(100vh-6rem)] flex px-4 sm:px-6 pb-4 max-w-7xl mx-auto w-full"
+    :class="sidebarTerbuka ? 'gap-4' : 'gap-0'"
   >
     <ChatSidebar
       :riwayat="riwayatTampil"
@@ -363,20 +433,17 @@ function hapusSemua() {
       <!-- Header chat -->
       <div class="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-waris-900/10">
         <button
-          v-if="!sidebarTerbuka"
           type="button"
-          title="Buka sidebar"
-          aria-label="Buka sidebar"
+          :title="sidebarTerbuka ? 'Tutup sidebar riwayat' : 'Buka sidebar riwayat'"
+          :aria-label="sidebarTerbuka ? 'Tutup sidebar riwayat' : 'Buka sidebar riwayat'"
           aria-controls="sidebar-riwayat"
-          aria-expanded="false"
+          :aria-expanded="sidebarTerbuka ? 'true' : 'false'"
           class="w-11 h-11 shrink-0 grid place-items-center rounded-full text-waris-900 border border-waris-900/20 hover:bg-waris-900/10 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-900/40 transition-all duration-200"
-          @click="sidebarTerbuka = true"
+          @click="sidebarTerbuka = !sidebarTerbuka"
         >
-          <PanelIcon arah="kanan" />
+          <PanelIcon :arah="sidebarTerbuka ? 'kiri' : 'kanan'" />
         </button>
-        <span class="w-10 h-10 shrink-0 rounded-full bg-waris-900 text-white grid place-items-center">
-          <i class="fa-solid fa-scale-balanced"></i>
-        </span>
+        <BrandLogo class="w-10 h-10" />
         <div class="min-w-0">
           <p class="font-display font-bold leading-tight truncate">Konsultasi Waris</p>
           <p
@@ -387,11 +454,14 @@ function hapusSemua() {
             <span class="w-2 h-2 rounded-full bg-waris-600 animate-pulse"></span>
             WarisMu sedang menyiapkan jawaban…
           </p>
+          <p v-else-if="memuatRiwayat" class="text-xs font-semibold text-ink/45" role="status">
+            Memuat riwayat…
+          </p>
         </div>
         <button
           type="button"
           class="ml-auto h-10 px-4 rounded-full border border-waris-800 text-waris-800 text-xs font-extrabold hover:bg-waris-900/5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-900/30 transition-all duration-200"
-          @click="sesiBaru"
+          @click="sesiBaru()"
         >
           <i class="fa-solid fa-plus mr-2"></i><span class="hidden sm:inline">Sesi Baru</span>
         </button>
@@ -415,23 +485,26 @@ function hapusSemua() {
         </button>
       </div>
 
+      <!-- State riwayat: gagal simpan/muat/hapus di server (tidak fatal) -->
+      <div
+        v-if="galatRiwayat"
+        class="mx-4 sm:mx-6 mt-4 flex items-center gap-3 rounded-xl border border-waris-900/20 bg-waris-100 px-4 py-3 text-xs font-bold text-waris-900"
+        role="status"
+      >
+        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+        <span>{{ galatRiwayat }}</span>
+      </div>
+
       <!-- TAMPILAN AWAL KOSONG: sapaan + input di tengah -->
       <div
         v-if="belumMulai && !sedangMengetik"
         class="flex-1 overflow-y-auto flex flex-col items-center justify-center text-center px-6 py-8"
       >
-        <span
-          class="w-16 h-16 rounded-full bg-waris-900 text-white grid place-items-center text-2xl shadow-soft mb-4"
-        >
-          <i class="fa-solid fa-scale-balanced"></i>
-        </span>
+        <BrandLogo class="w-16 h-16 mb-4" />
         <h2 class="font-display font-bold text-xl sm:text-2xl leading-snug max-w-xl">
           Assalamualaikum, semoga kondisimu baik-baik saja. Ada yang bisa WarisMu bantu?
         </h2>
-        <p class="text-sm text-ink/50 mt-3 max-w-md">
-          Ceritakan kondisi keluargamu dengan bahasa sehari-hari — WarisMu akan membantu
-          melengkapinya.
-        </p>
+
 
         <!-- Tamu: beri tahu sejak awal bahwa riwayat tidak disimpan -->
         <p
@@ -455,17 +528,17 @@ function hapusSemua() {
               aria-label="Ceritakan kondisi keluarga untuk simulasi waris"
               class="flex-1 min-w-0 bg-transparent resize-none outline-none text-sm py-3 max-h-32 placeholder:text-ink/35"
               @input="autoResize"
-              @keydown="saatKeydown"
+              @keydown.enter.exact.prevent="kirimPesan()"
             ></textarea>
             <button
               type="button"
               aria-label="Kirim pesan"
-              :disabled="!pesanBaru.trim()"
+              :disabled="kirimNonaktif"
               class="w-12 h-12 shrink-0 rounded-full grid place-items-center text-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-900/40"
               :class="
-                pesanBaru.trim()
-                  ? 'bg-waris-900 hover:scale-105 active:scale-95 shadow-soft'
-                  : 'bg-waris-900/25 cursor-not-allowed'
+                kirimNonaktif
+                  ? 'bg-waris-900/25 opacity-50 cursor-not-allowed'
+                  : 'bg-waris-900 hover:scale-105 active:scale-95 shadow-soft'
               "
               @click="kirimPesan()"
             >
@@ -485,9 +558,7 @@ function hapusSemua() {
         <div ref="areaPesan" class="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
           <ChatBubble v-for="b in daftarPesan" :key="b.id" :bubble="b" @laporkan="laporkan" />
           <div v-if="sedangMengetik" class="flex justify-start gap-3" role="status">
-            <span class="w-9 h-9 shrink-0 rounded-full bg-waris-900 text-white grid place-items-center text-sm">
-              <i class="fa-solid fa-scale-balanced"></i>
-            </span>
+            <BrandLogo class="w-9 h-9" />
             <div class="bg-waris-50 text-ink rounded-xl rounded-tl-none px-5 py-4 flex gap-2 items-center shadow-soft">
               <span class="w-2 h-2 rounded-full bg-waris-800 animate-bounce" style="animation-delay: 0ms"></span>
               <span class="w-2 h-2 rounded-full bg-waris-800 animate-bounce" style="animation-delay: 150ms"></span>
@@ -510,17 +581,17 @@ function hapusSemua() {
               aria-label="Tulis pesan untuk WarisMu"
               class="flex-1 min-w-0 bg-transparent resize-none outline-none text-sm py-3 max-h-32 placeholder:text-ink/35"
               @input="autoResize"
-              @keydown="saatKeydown"
+              @keydown.enter.exact.prevent="kirimPesan()"
             ></textarea>
             <button
               type="button"
               aria-label="Kirim pesan"
-              :disabled="!pesanBaru.trim()"
+              :disabled="kirimNonaktif"
               class="w-12 h-12 shrink-0 rounded-full grid place-items-center text-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-900/40"
               :class="
-                pesanBaru.trim()
-                  ? 'bg-waris-900 hover:scale-105 active:scale-95 shadow-soft'
-                  : 'bg-waris-900/25 cursor-not-allowed'
+                kirimNonaktif
+                  ? 'bg-waris-900/25 opacity-50 cursor-not-allowed'
+                  : 'bg-waris-900 hover:scale-105 active:scale-95 shadow-soft'
               "
               @click="kirimPesan()"
             >
@@ -551,7 +622,7 @@ function hapusSemua() {
             Hapus semua riwayat?
           </h3>
           <p class="text-sm text-ink/60 leading-relaxed mt-2">
-            {{ daftarRiwayat.length }} sesi percakapan beserta isinya akan dihapus dari browser ini.
+            {{ daftarRiwayat.length }} sesi percakapan beserta isinya akan dihapus dari akunmu.
             Tindakan ini tidak bisa dibatalkan.
           </p>
           <div class="flex flex-wrap gap-3 mt-6">

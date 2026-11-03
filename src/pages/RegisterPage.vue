@@ -1,6 +1,7 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { simpanLogin } from '../lib/akun.js'
 
 const router = useRouter()
 const nama = ref('')
@@ -10,28 +11,59 @@ const lihatSandi = ref(false)
 const galat = ref('')
 const sibuk = ref(false)
 
+const BATAS_WAKTU_API = 10_000
+const PESAN_KONEKSI = 'Gagal terhubung ke server. Coba lagi nanti.'
+// Minimal 8 karakter, wajib mengandung huruf dan angka.
+const SANDI_KUAT = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/
+const sandiTidakValid = computed(
+  () => password.value.length > 0 && !SANDI_KUAT.test(password.value),
+)
+
 // UC-01 Registrasi Akun → POST /api/auth/register
 async function daftar() {
   galat.value = ''
-  if (!nama.value.trim() || !/.+@.+\..+/.test(email.value) || password.value.length < 6) {
-    galat.value = 'Isi nama, email valid, dan password minimal 6 karakter.'
+  if (!nama.value.trim() || !/.+@.+\..+/.test(email.value)) {
+    galat.value = 'Isi nama dan email valid.'
     return
   }
+  if (!SANDI_KUAT.test(password.value)) {
+    galat.value = 'Password minimal 8 karakter, kombinasi huruf dan angka.'
+    return
+  }
+
   sibuk.value = true
+  // Batas 10 detik: Supabase/API yang menggantung tidak boleh membuat spinner abadi.
+  const kendali = new AbortController()
+  const batas = setTimeout(() => kendali.abort(), BATAS_WAKTU_API)
+
   try {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nama: nama.value.trim(), email: email.value.trim(), password: password.value }),
+      signal: kendali.signal,
     })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || 'Gagal mendaftar, coba lagi.')
-    localStorage.setItem('warismu_token', data.token)
-    localStorage.setItem('warismu_user', JSON.stringify(data.user))
+
+    let data = {}
+    try {
+      data = await res.json()
+    } catch { /* respons kosong / bukan JSON */ }
+
+    if (!res.ok) {
+      // 5xx = server/database bermasalah → pesan koneksi yang seragam.
+      if (res.status >= 500) throw new Error(PESAN_KONEKSI)
+      throw new Error(data.error || 'Gagal mendaftar, coba lagi.')
+    }
+    if (!data.token || !data.user) throw new Error(PESAN_KONEKSI)
+
+    simpanLogin(data.token, data.user)
     router.push('/chat')
   } catch (e) {
-    galat.value = e.message
+    const gagalKoneksi =
+      e?.name === 'AbortError' || e?.name === 'TypeError' || e?.message === PESAN_KONEKSI
+    galat.value = gagalKoneksi ? PESAN_KONEKSI : e?.message || PESAN_KONEKSI
   } finally {
+    clearTimeout(batas)
     sibuk.value = false
   }
 }
@@ -65,9 +97,16 @@ async function daftar() {
           <input
             v-model="password"
             :type="lihatSandi ? 'text' : 'password'"
-            placeholder="Password (min. 6 karakter)"
+            placeholder="Password (min. 8 karakter, huruf + angka)"
             autocomplete="new-password"
-            class="w-full h-12 pl-5 pr-14 rounded-lg bg-white/70 border border-waris-900/20 outline-none text-sm focus:ring-2 focus:ring-waris-900/30 placeholder:text-ink/35"
+            :aria-invalid="sandiTidakValid || undefined"
+            :aria-describedby="sandiTidakValid ? 'sandi-error' : undefined"
+            class="w-full h-12 pl-5 pr-14 rounded-lg bg-white/70 border outline-none text-sm focus:ring-2 placeholder:text-ink/35 transition-colors duration-200"
+            :class="
+              sandiTidakValid
+                ? 'border-danger focus:ring-danger/30'
+                : 'border-waris-900/20 focus:ring-waris-900/30'
+            "
           />
           <button
             type="button"
@@ -80,6 +119,14 @@ async function daftar() {
             <i :class="lihatSandi ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
           </button>
         </div>
+        <p
+          v-if="sandiTidakValid"
+          id="sandi-error"
+          class="text-xs font-bold text-danger mt-1 px-1"
+        >
+          <i class="fa-solid fa-circle-exclamation mr-1" aria-hidden="true"></i>
+          Password minimal 8 karakter, kombinasi huruf dan angka.
+        </p>
         <p v-if="galat" class="text-xs font-bold text-danger bg-danger-soft border border-danger/25 rounded-lg px-4 py-3">
           <i class="fa-solid fa-circle-exclamation mr-2"></i>{{ galat }}
         </p>

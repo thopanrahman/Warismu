@@ -1,94 +1,75 @@
 <script setup>
-import { computed, ref } from 'vue'
-import ArticleCard from '../components/ArticleCard.vue'
-import { daftarKategori, daftarPanduan } from '../data/panduan.js'
-
-// Fitur interaktif 4: pencarian + filter kategori (computed property)
-const kataKunci = ref('')
-const kategoriAktif = ref('Semua')
-
-const hasilFilter = computed(() => {
-  const kunci = kataKunci.value.trim().toLowerCase()
-  return daftarPanduan.filter((a) => {
-    const cocokKategori = kategoriAktif.value === 'Semua' || a.kategori === kategoriAktif.value
-    const cocokKunci =
-      !kunci ||
-      a.judul.toLowerCase().includes(kunci) ||
-      a.ringkasan.toLowerCase().includes(kunci)
-    return cocokKategori && cocokKunci
-  })
-})
-
-function pilihKategori(k) {
-  kategoriAktif.value = k
-}
-function resetFilter() {
-  kataKunci.value = ''
-  kategoriAktif.value = 'Semua'
-}
+import { RouterLink } from 'vue-router'
+import { daftarPanduan } from '../data/panduan.js'
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
-    <div class="text-center max-w-2xl mx-auto">
-      <span class="text-xs font-extrabold tracking-widest text-waris-900 uppercase">
-        <i class="fa-solid fa-book-open mr-2"></i>Panduan Faraid
-      </span>
-      <h1 class="text-5xl sm:text-6xl font-bold mt-4 text-ink">Perpustakaan Ilmu Waris</h1>
-      <p class="text-ink/60 mt-4">
-        {{ daftarPanduan.length }} artikel edukasi — dari dasar hingga lanjutan. Cari topik yang kamu butuhkan.
+  <div class="w-full">
+    <!-- Hero: identitas Pustaka Faraid -->
+    <section class="w-full bg-waris-900 py-16 md:py-24 px-4 text-center">
+      <h1 class="font-display text-4xl md:text-5xl font-bold text-white mb-4">
+        Pustaka Faraid: Memahami Hukum Waris Islam
+      </h1>
+      <p class="font-sans text-lg md:text-xl text-waris-50 max-w-3xl mx-auto">
+        Telusuri kaidah, dalil, dan tata cara pembagian harta warisan sesuai syariat Islam.
+        Disarikan dari rujukan kitab Fikih Faraidh untuk memudahkan Anda memahami dasar-dasar
+        ilmu waris.
       </p>
-    </div>
+    </section>
 
-    <!-- Search bar -->
-    <div class="max-w-xl mx-auto mt-10">
-      <div class="relative">
-        <i class="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-waris-800/50"></i>
-        <input
-          v-model="kataKunci"
-          type="search"
-          placeholder="Cari artikel… (cth: anak, suami, hutang)"
-          class="w-full h-12 rounded-lg border border-waris-900/20 bg-white pl-12 pr-5 text-sm outline-none shadow-soft focus-visible:ring-2 focus-visible:ring-waris-900/30 transition-all duration-300"
-        />
+    <!-- Daftar artikel: grid kartu bergambar, tanpa tabel -->
+    <section class="bg-paper">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <RouterLink
+            v-for="item in daftarPanduan"
+            :key="item.id"
+            :to="'/panduan/' + item.id"
+            class="group flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100"
+          >
+            <div class="relative">
+              <img
+                :src="item.gambarCover"
+                :alt="item.judul"
+                class="w-full h-48 object-cover"
+                loading="lazy"
+              />
+              <span
+                class="absolute top-4 left-4 bg-waris-900 text-white text-xs font-bold px-3 py-1 rounded-full"
+              >
+                {{ item.kategori }}
+              </span>
+            </div>
+
+            <div class="flex items-center gap-4 text-xs text-gray-500 mt-4 px-6">
+              <span class="inline-flex items-center gap-1.5">
+                <i class="fa-regular fa-calendar" aria-hidden="true"></i>{{ item.tanggal }}
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <i class="fa-regular fa-clock" aria-hidden="true"></i>{{ item.estimasi }}
+              </span>
+            </div>
+
+            <h2 class="font-display text-xl font-bold text-ink mt-2 px-6 line-clamp-2">
+              {{ item.judul }}
+            </h2>
+
+            <p class="text-sm text-gray-600 mt-2 px-6 line-clamp-3">
+              {{ item.ringkasan }}
+            </p>
+
+            <div class="px-6 pb-6 mt-auto pt-4">
+              <span class="text-waris-900 font-bold flex items-center gap-2 text-sm">
+                Baca Selengkapnya
+                <i
+                  class="fa-solid fa-arrow-right text-xs group-hover:translate-x-1 transition-transform duration-300"
+                  aria-hidden="true"
+                ></i>
+              </span>
+            </div>
+          </RouterLink>
+        </div>
       </div>
-    </div>
-
-    <!-- Filter kategori -->
-    <div class="flex flex-wrap justify-center gap-2 mt-6">
-      <button
-        v-for="k in daftarKategori"
-        :key="k"
-        class="h-10 px-5 rounded-full text-xs font-extrabold transition-all duration-300"
-        :class="
-          kategoriAktif === k
-            ? 'bg-waris-900 text-white shadow-soft'
-            : 'bg-cream border border-waris-900/15 text-ink/65 hover:border-waris-800 hover:text-waris-900'
-        "
-        @click="pilihKategori(k)"
-      >
-        {{ k }}
-      </button>
-    </div>
-
-    <p class="text-center text-xs text-ink/55 font-bold mt-6">
-      Menampilkan <strong class="text-waris-900">{{ hasilFilter.length }}</strong> dari
-      {{ daftarPanduan.length }} artikel
-    </p>
-
-    <!-- Grid artikel (CSS Grid Tailwind — TANPA table) -->
-    <div v-if="hasilFilter.length" class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 mt-8">
-      <ArticleCard v-for="a in hasilFilter" :key="a.id" :artikel="a" />
-    </div>
-    <div v-else class="text-center bg-cream border border-waris-800/25 rounded-xl py-16 mt-8">
-      <i class="fa-solid fa-folder-open text-4xl text-waris-800/30"></i>
-      <p class="font-bold text-xl mt-4 text-ink">Tidak ada artikel yang cocok</p>
-      <p class="text-sm text-ink/55 mt-2">Coba kata kunci atau kategori lain.</p>
-      <button
-        class="mt-6 h-12 px-8 rounded-lg bg-waris-900 text-white text-sm font-extrabold shadow-soft hover:bg-waris-800 transition-all duration-300"
-        @click="resetFilter"
-      >
-        <i class="fa-solid fa-rotate-left mr-2"></i>Reset Filter
-      </button>
-    </div>
+    </section>
   </div>
 </template>

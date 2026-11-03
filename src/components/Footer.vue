@@ -1,5 +1,6 @@
 <script setup>
 import { RouterLink } from 'vue-router'
+import BrandLogo from './BrandLogo.vue'
 
 const tahun = new Date().getFullYear()
 </script>
@@ -9,9 +10,7 @@ const tahun = new Date().getFullYear()
     <div class="max-w-6xl mx-auto px-4 sm:px-6 py-12 grid gap-10 md:grid-cols-3">
       <div>
         <div class="flex items-center gap-3 mb-3">
-          <span class="w-10 h-10 rounded-full bg-waris-500 text-white grid place-items-center text-xl">
-            <i class="fa-solid fa-scale-balanced"></i>
-          </span>
+          <BrandLogo class="w-10 h-10" />
           <span class="font-display font-bold text-xl">WarisMu</span>
         </div>
         <p class="text-sm text-waris-100/80 leading-relaxed">

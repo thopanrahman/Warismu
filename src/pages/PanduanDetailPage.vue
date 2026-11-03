@@ -1,95 +1,129 @@
 <script setup>
-import { computed } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
-import ArticleCard from '../components/ArticleCard.vue'
-import { daftarPanduan } from '../data/panduan.js'
+import { computed, watchEffect } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
+import { daftarPanduan, penulisPanduan } from '../data/panduan.js'
 
-// Dynamic route /panduan/:id
 const route = useRoute()
-const router = useRouter()
 
-const artikel = computed(() => daftarPanduan.find((a) => a.id === Number(route.params.id)))
+const item = computed(() => daftarPanduan.find((artikel) => artikel.id === Number(route.params.id)))
 
-const artikelLain = computed(() =>
-  daftarPanduan.filter((a) => a.id !== Number(route.params.id)).slice(0, 3),
-)
-
-function kembali() {
-  router.back()
-}
+// Judul tab mengikuti artikel yang sedang dibaca.
+watchEffect(() => {
+  if (item.value && typeof document !== 'undefined') {
+    document.title = `${item.value.judul} — WarisMu`
+  }
+})
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto px-4 sm:px-6 py-16">
-    <button
-      class="inline-flex items-center gap-2 h-12 px-6 rounded-lg border border-waris-800 text-waris-800 text-sm font-extrabold hover:bg-waris-900/5 transition-all duration-300 mb-6"
-      @click="kembali"
-    >
-      <i class="fa-solid fa-arrow-left"></i> Kembali
-    </button>
+  <div v-if="item" class="w-full bg-paper">
+    <!-- Hero image artikel -->
+    <div class="relative w-full h-[400px]">
+      <img
+        :src="item.gambarCover"
+        :alt="item.judul"
+        class="w-full h-full object-cover"
+      />
+      <div class="absolute inset-0 bg-waris-950/35"></div>
 
-    <article v-if="artikel" class="bg-cream rounded-xl border border-waris-900/10 shadow-soft overflow-hidden">
-      <img :src="artikel.gambar" :alt="artikel.judul" class="w-full h-60 sm:h-80 object-cover" />
-      <div class="p-6 sm:p-10">
-        <div class="flex flex-wrap items-center gap-3">
-          <span class="text-xs font-extrabold bg-waris-900 text-white px-4 py-2 rounded-full">
-            {{ artikel.kategori }}
-          </span>
-          <span class="text-xs text-ink/55 font-bold">
-            <i class="fa-regular fa-calendar mr-2"></i>{{ artikel.tanggal }}
-            <span class="mx-1">•</span>
-            <i class="fa-regular fa-clock mr-2"></i>{{ artikel.estimasi }}
-          </span>
-        </div>
-        <h1 class="text-4xl sm:text-5xl font-bold mt-6 leading-tight text-ink">{{ artikel.judul }}</h1>
-        <p class="text-ink/70 mt-6 leading-relaxed bg-waris-50 border border-waris-900/10 rounded-lg p-4 italic">
-          {{ artikel.ringkasan }}
-        </p>
-
-        <div class="mt-6 space-y-4">
-          <p v-for="(p, i) in artikel.isi" :key="i" class="text-sm sm:text-base text-ink/70 leading-relaxed">
-            {{ p }}
-          </p>
-        </div>
-
-        <div class="mt-8 bg-waris-50 border border-waris-900/10 rounded-lg p-6">
-          <h2 class="font-bold text-xl text-waris-950">
-            <i class="fa-solid fa-list-checks mr-2"></i>Poin Penting
-          </h2>
-          <ul class="mt-4 space-y-3 text-sm text-ink/75">
-            <li v-for="poin in artikel.poin" :key="poin" class="flex gap-3">
-              <i class="fa-solid fa-circle-check text-waris-900 mt-1 shrink-0"></i>
-              <span>{{ poin }}</span>
-            </li>
-          </ul>
-        </div>
-
-        <div class="mt-6 flex flex-col sm:flex-row sm:items-center gap-3 text-xs text-ink/70 bg-white rounded-lg p-4 border border-waris-900/10">
-          <span class="font-extrabold shrink-0"><i class="fa-solid fa-book mr-2 text-waris-900"></i>Sumber &amp; Dalil:</span>
-          <span>{{ artikel.sumber }}</span>
-        </div>
-
-        <div class="mt-6 bg-waris-100/60 border border-waris-800/20 rounded-lg p-4 text-xs text-ink/70 leading-relaxed">
-          <i class="fa-solid fa-triangle-exclamation mr-2 text-waris-800"></i>
-          <strong>Disclaimer:</strong> Artikel ini untuk edukasi dan bukan fatwa/putusan hukum.
-          Konsultasikan kasus nyata kepada ahli faraid, ulama, atau Pengadilan Agama.
-        </div>
-      </div>
-    </article>
-
-    <div v-else class="text-center bg-cream border border-waris-800/25 rounded-xl py-16">
-      <i class="fa-solid fa-file-circle-question text-4xl text-waris-800/30"></i>
-      <p class="font-bold text-xl mt-4 text-ink">Artikel tidak ditemukan</p>
-      <RouterLink to="/panduan" class="inline-flex items-center gap-2 mt-6 h-12 px-8 rounded-lg bg-waris-900 text-white text-sm font-extrabold hover:bg-waris-800 transition-all duration-300">
-        Kembali ke Daftar Panduan
+      <RouterLink
+        to="/panduan"
+        class="absolute top-6 left-4 sm:left-6 inline-flex items-center gap-2 bg-paper/95 text-ink text-sm font-bold px-4 py-2 rounded-full hover:bg-cream transition-colors duration-300"
+      >
+        <i class="fa-solid fa-arrow-left text-xs" aria-hidden="true"></i>
+        Pustaka
       </RouterLink>
+
+      <span
+        class="absolute bottom-6 left-4 sm:left-6 bg-waris-900 text-white text-xs font-bold px-3 py-1 rounded-full"
+      >
+        {{ item.kategori }}
+      </span>
     </div>
 
-    <section v-if="artikel" class="mt-16">
-      <h2 class="font-bold text-3xl text-ink">Baca Juga</h2>
-      <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 mt-6">
-        <ArticleCard v-for="a in artikelLain" :key="a.id" :artikel="a" />
+    <!-- Isi artikel -->
+    <div class="max-w-3xl mx-auto px-4 py-10">
+      <h1 class="font-display text-4xl font-bold text-ink mb-4 leading-tight">
+        {{ item.judul }}
+      </h1>
+
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500 mb-8">
+        <span class="inline-flex items-center gap-2">
+          <i class="fa-regular fa-user" aria-hidden="true"></i>{{ item.penulis }}
+        </span>
+        <span class="inline-flex items-center gap-2">
+          <i class="fa-regular fa-calendar" aria-hidden="true"></i>{{ item.tanggal }}
+        </span>
+        <span class="inline-flex items-center gap-2">
+          <i class="fa-regular fa-clock" aria-hidden="true"></i>{{ item.estimasi }}
+        </span>
       </div>
-    </section>
+
+      <p class="mb-8 text-ink/80 leading-relaxed italic border-l-4 border-waris-900 pl-4">
+        {{ item.ringkasan }}
+      </p>
+
+      <p v-for="(paragraf, i) in item.isi" :key="i" class="mb-6 text-ink leading-relaxed">
+        {{ paragraf }}
+      </p>
+
+      <!-- Kotak dalil Arab, hanya tampil bila artikel memilikinya -->
+      <div
+        v-if="item.arab"
+        class="bg-waris-50 p-6 rounded-xl border border-waris-900/20 text-right mb-8"
+      >
+        <p class="text-3xl leading-loose text-ink" dir="rtl" lang="ar">{{ item.arab.teks }}</p>
+        <p class="text-sm text-ink/70 italic mt-4 text-left">{{ item.arab.terjemahan }}</p>
+      </div>
+
+      <!-- Poin penting -->
+      <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
+        <h2 class="font-display text-xl font-bold text-ink mb-4">Poin Penting</h2>
+        <ul class="space-y-3">
+          <li v-for="poin in item.poin" :key="poin" class="flex gap-3 text-sm text-ink/80">
+            <i class="fa-solid fa-circle-check text-waris-900 mt-0.5 shrink-0" aria-hidden="true"></i>
+            <span>{{ poin }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <p class="text-xs text-gray-500 leading-relaxed">
+        <strong class="text-ink">Sumber:</strong> {{ item.sumber }}
+      </p>
+
+      <!-- Kotak penulis -->
+      <div class="bg-cream rounded-2xl p-8 border border-gray-200 mt-16">
+        <p class="text-xs font-extrabold tracking-widest text-waris-900">TENTANG PENULIS</p>
+        <h2 class="font-display text-2xl font-bold text-ink mt-2">{{ penulisPanduan.nama }}</h2>
+        <p class="text-sm text-gray-600 mt-1">{{ penulisPanduan.jabatan }}</p>
+        <p class="text-gray-600 text-sm mt-3 leading-relaxed">{{ penulisPanduan.deskripsi }}</p>
+
+        <RouterLink
+          to="/panduan"
+          class="inline-flex items-center gap-2 bg-waris-900 text-white rounded-full px-6 py-2 font-bold text-sm mt-6 hover:bg-waris-800 transition-colors duration-300"
+        >
+          <i class="fa-solid fa-arrow-left text-xs" aria-hidden="true"></i>
+          Kembali ke Pustaka
+        </RouterLink>
+      </div>
+    </div>
+  </div>
+
+  <!-- Artikel tidak ditemukan -->
+  <div v-else class="w-full bg-paper">
+    <div class="max-w-3xl mx-auto px-4 py-24 text-center">
+      <i class="fa-solid fa-file-circle-question text-4xl text-waris-900/30" aria-hidden="true"></i>
+      <h1 class="font-display text-2xl font-bold text-ink mt-4">Artikel tidak ditemukan</h1>
+      <p class="text-gray-600 mt-2">
+        Artikel yang Anda cari mungkin sudah dipindahkan atau tautannya tidak lengkap.
+      </p>
+      <RouterLink
+        to="/panduan"
+        class="inline-flex items-center gap-2 bg-waris-900 text-white rounded-full px-6 py-2 font-bold text-sm mt-6 hover:bg-waris-800 transition-colors duration-300"
+      >
+        <i class="fa-solid fa-arrow-left text-xs" aria-hidden="true"></i>
+        Kembali ke Pustaka
+      </RouterLink>
+    </div>
   </div>
 </template>

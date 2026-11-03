@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import PanelIcon from './PanelIcon.vue'
+import BrandLogo from './BrandLogo.vue'
+import { ambilPengguna, keluarAkun } from '../lib/akun.js'
 
 const props = defineProps({
   riwayat: { type: Array, required: true },
@@ -12,21 +14,15 @@ const props = defineProps({
 })
 defineEmits(['baru', 'pilih', 'hapus', 'tutup', 'cari'])
 
-// ===== Kartu user: Registered vs Guest (FR-20) — dibaca dari localStorage =====
-const pengguna = computed(() => {
-  try {
-    return JSON.parse(localStorage.getItem('warismu_user'))
-  } catch {
-    return null
-  }
-})
+// ===== Kartu user: Registered vs Guest (FR-20) =====
+const pengguna = computed(() => ambilPengguna())
 const inisial = computed(() => {
   const n = pengguna.value?.nama || '?'
   return n.trim().charAt(0).toUpperCase()
 })
+// UC-03 Logout: token & profil dibuang, riwayat tetap aman di server.
 function keluar() {
-  localStorage.removeItem('warismu_token')
-  localStorage.removeItem('warismu_user')
+  keluarAkun()
   location.reload()
 }
 
@@ -134,9 +130,7 @@ const kelompok = computed(() =>
         <!-- Header -->
         <div class="flex items-center justify-between gap-2 p-4">
           <div class="flex items-center gap-3 min-w-0">
-            <span class="w-9 h-9 shrink-0 rounded-full bg-waris-500 text-white grid place-items-center">
-              <i class="fa-solid fa-scale-balanced text-sm"></i>
-            </span>
+            <BrandLogo class="w-9 h-9" />
             <span class="font-display font-bold truncate">Riwayat</span>
           </div>
           <button
@@ -319,7 +313,7 @@ const kelompok = computed(() =>
             <span class="min-w-0">
               <span class="block text-sm font-extrabold">Masuk / Daftar</span>
               <span class="block text-[11px] font-semibold text-waris-100/55 mt-0.5 leading-snug">
-                Mode tamu: riwayat tidak disimpan.
+                Masuk agar riwayat konsultasi tersimpan.
               </span>
             </span>
           </RouterLink>

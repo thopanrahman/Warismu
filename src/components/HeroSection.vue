@@ -1,5 +1,6 @@
 <script setup>
 import { RouterLink } from 'vue-router'
+import fotoHero from '../assets/hero-keluarga.jpg'
 
 // Hero Beranda: foto keluarga sebagai latar + lapisan gelap agar teks putih terbaca.
 // -mt-[5.25rem] = tinggi blok navbar (pt-4 App + navbar 68px) sehingga foto naik
@@ -12,7 +13,7 @@ const janji = ['Gratis & tanpa login', 'Bahasa sehari-hari', 'Berbasis dalil & K
 <template>
   <section class="relative -mt-[5.25rem] overflow-hidden bg-waris-950">
     <img
-      src="https://i.pinimg.com/736x/ea/6a/7a/ea6a7a55557685c0b00b78ed1e35a684.jpg"
+      :src="fotoHero"
       alt="Keluarga Muslim berkumpul bersama di ruang tamu"
       class="absolute inset-0 w-full h-full object-cover"
     />
@@ -20,11 +21,6 @@ const janji = ['Gratis & tanpa login', 'Bahasa sehari-hari', 'Berbasis dalil & K
     <div class="absolute inset-0 bg-waris-950/[0.72]"></div>
 
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-36 pb-20 sm:pt-44 sm:pb-28">
-      <span
-        class="inline-flex items-center gap-2 rounded-full bg-white/[0.12] border border-white/25 backdrop-blur px-4 py-2 text-xs font-extrabold tracking-wide text-white"
-      >
-        <i class="fa-solid fa-mosque text-waris-200"></i> Asisten Waris Islam Berbasis AI
-      </span>
 
       <h1 class="mt-6 max-w-3xl text-4xl sm:text-6xl lg:text-7xl font-bold leading-[1.05] text-white">
         Pahami Waris Islam dengan Bercerita Saja.

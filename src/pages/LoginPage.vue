@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { simpanLogin } from '../lib/akun.js'
 
 const router = useRouter()
 const email = ref('')
@@ -9,6 +10,9 @@ const lihatSandi = ref(false)
 const galat = ref('')
 const sibuk = ref(false)
 
+const BATAS_WAKTU_API = 10_000
+const PESAN_KONEKSI = 'Gagal terhubung ke server. Coba lagi nanti.'
+
 // UC-01 (lanjutan) Masuk Akun → POST /api/auth/login
 async function masuk() {
   galat.value = ''
@@ -16,21 +20,40 @@ async function masuk() {
     galat.value = 'Isi email valid dan password.'
     return
   }
+
   sibuk.value = true
+  // Batas 10 detik: Supabase/API yang menggantung tidak boleh membuat spinner abadi.
+  const kendali = new AbortController()
+  const batas = setTimeout(() => kendali.abort(), BATAS_WAKTU_API)
+
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.value.trim(), password: password.value }),
+      signal: kendali.signal,
     })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || 'Gagal masuk, coba lagi.')
-    localStorage.setItem('warismu_token', data.token)
-    localStorage.setItem('warismu_user', JSON.stringify(data.user))
+
+    let data = {}
+    try {
+      data = await res.json()
+    } catch { /* respons kosong / bukan JSON */ }
+
+    if (!res.ok) {
+      // 5xx = server/database bermasalah → pesan koneksi yang seragam.
+      if (res.status >= 500) throw new Error(PESAN_KONEKSI)
+      throw new Error(data.error || 'Gagal masuk, coba lagi.')
+    }
+    if (!data.token || !data.user) throw new Error(PESAN_KONEKSI)
+
+    simpanLogin(data.token, data.user)
     router.push('/chat')
   } catch (e) {
-    galat.value = e.message
+    const gagalKoneksi =
+      e?.name === 'AbortError' || e?.name === 'TypeError' || e?.message === PESAN_KONEKSI
+    galat.value = gagalKoneksi ? PESAN_KONEKSI : e?.message || PESAN_KONEKSI
   } finally {
+    clearTimeout(batas)
     sibuk.value = false
   }
 }

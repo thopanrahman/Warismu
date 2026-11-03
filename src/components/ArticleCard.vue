@@ -12,7 +12,7 @@ defineProps({
   >
     <div class="relative overflow-hidden">
       <img
-        :src="artikel.gambar"
+        :src="artikel.gambarCover"
         :alt="artikel.judul"
         class="w-full h-44 object-cover group-hover:scale-105 transition-all duration-700"
         loading="lazy"

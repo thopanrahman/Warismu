@@ -6,7 +6,7 @@ const langkah = [
     deskripsi: 'Ceritakan kondisi keluarga dengan bahasa sehari-hari, misal “ayah wafat meninggalkan ibu, istri, dan 2 anak”.',
   },
   {
-    ikon: 'fa-solid fa-list-checks',
+    ikon: 'fa-solid fa-list-check',
     judul: '2. Lengkapi Data',
     deskripsi: 'Chatbot bertanya soal data yang kurang: hutang pewaris, harta bersama, atau status ahli waris.',
   },

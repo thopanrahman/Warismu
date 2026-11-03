@@ -1,9 +1,29 @@
 <script setup>
-import { ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { ref, watch } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import BrandLogo from './BrandLogo.vue'
+import { ambilPengguna, keluarAkun } from '../lib/akun.js'
 
 const route = useRoute()
+const router = useRouter()
 const menuBuka = ref(false)
+
+// ===== Status akun (UC-02 / UC-03) =====
+// Navbar hidup di App.vue, jadi tidak ikut ter-mount ulang saat pindah rute.
+// Karena itu status login dibaca ulang setiap rute berubah.
+const pengguna = ref(ambilPengguna())
+watch(
+  () => route.fullPath,
+  () => {
+    pengguna.value = ambilPengguna()
+  },
+)
+function keluar() {
+  keluarAkun()
+  pengguna.value = null
+  tutupMenu()
+  router.push('/')
+}
 
 // Fitur interaktif 1: toggle menu mobile
 function toggleMenu() {
@@ -31,7 +51,7 @@ const tombolDaftar = { path: '/daftar', label: 'Daftar Akun', ikon: 'fa-solid fa
 const tombolMasuk = { path: '/masuk', label: 'Masuk', ikon: 'fa-solid fa-right-to-bracket' }
 
 // Satu ukuran untuk menu tengah maupun tombol akun, supaya tinggi & padding sama.
-const kelasTautan = 'px-3 lg:px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-all duration-300'
+const kelasTautan = 'px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-all duration-300'
 </script>
 
 <template>
@@ -43,19 +63,15 @@ const kelasTautan = 'px-3 lg:px-4 py-2 rounded-lg text-sm font-bold whitespace-n
       <!-- Tiga kolom: logo kiri, menu di tengah, akun di kanan -->
       <nav class="grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 sm:px-6 py-3">
         <RouterLink to="/" class="flex items-center gap-3" @click="tutupMenu">
-          <span
-            class="w-10 h-10 rounded-full bg-waris-900 text-white grid place-items-center text-xl shadow-soft"
-          >
-            <i class="fa-solid fa-scale-balanced"></i>
-          </span>
+          <BrandLogo class="w-10 h-10" />
           <span class="leading-tight">
             <span class="block font-display font-bold text-lg text-ink">WarisMu</span>
             <span class="block text-xs text-ink/55 -mt-1 font-semibold">Asisten Waris Islam</span>
           </span>
         </RouterLink>
 
-        <!-- Menu utama: tepat di tengah -->
-        <div class="hidden md:flex items-center justify-center gap-0.5 lg:gap-1">
+        <!-- Menu utama: tepat di tengah, setiap menu berikon -->
+        <div class="hidden lg:flex items-center justify-center gap-1">
           <RouterLink
             v-for="t in tautan"
             :key="t.path"
@@ -67,36 +83,51 @@ const kelasTautan = 'px-3 lg:px-4 py-2 rounded-lg text-sm font-bold whitespace-n
                 : 'text-ink/70 hover:bg-waris-900/10 hover:text-waris-900',
             ]"
           >
-            <i :class="t.ikon" class="hidden lg:inline mr-2"></i>{{ t.label }}
+            <i :class="t.ikon" class="mr-2"></i>{{ t.label }}
           </RouterLink>
         </div>
 
-        <!-- Akun: Masuk + Daftar Akun, seukuran menu tengah, rata kanan -->
-        <div class="hidden md:flex items-center justify-end gap-0.5 lg:gap-1">
-          <RouterLink
-            :to="tombolMasuk.path"
-            :class="[
-              kelasTautan,
-              aktif(tombolMasuk.path)
-                ? 'bg-waris-900/10 text-waris-900'
-                : 'text-ink/70 hover:bg-waris-900/10 hover:text-waris-900',
-            ]"
-          >
-            {{ tombolMasuk.label }}
-          </RouterLink>
-          <RouterLink
-            :to="tombolDaftar.path"
-            :class="[kelasTautan, 'bg-waris-900 text-white shadow-soft hover:bg-waris-800 active:scale-95']"
-          >
-            {{ tombolDaftar.label }}
-          </RouterLink>
+        <!-- Akun: sudah masuk → nama + Keluar; belum → Masuk + Daftar Akun -->
+        <div class="hidden lg:flex items-center justify-end gap-1">
+          <template v-if="pengguna">
+            <span class="px-3 text-sm font-bold text-waris-900 truncate max-w-[10rem]">
+              <i class="fa-solid fa-circle-user mr-2" aria-hidden="true"></i>{{ pengguna.nama }}
+            </span>
+            <button
+              type="button"
+              :class="[kelasTautan, 'text-ink/70 hover:bg-waris-900/10 hover:text-waris-900']"
+              @click="keluar"
+            >
+              <i class="fa-solid fa-right-from-bracket mr-2" aria-hidden="true"></i>Keluar
+            </button>
+          </template>
+          <template v-else>
+            <RouterLink
+              :to="tombolMasuk.path"
+              :class="[
+                kelasTautan,
+                aktif(tombolMasuk.path)
+                  ? 'bg-waris-900/10 text-waris-900'
+                  : 'text-ink/70 hover:bg-waris-900/10 hover:text-waris-900',
+              ]"
+            >
+              {{ tombolMasuk.label }}
+            </RouterLink>
+            <RouterLink
+              :to="tombolDaftar.path"
+              :class="[kelasTautan, 'bg-waris-900 text-white shadow-soft hover:bg-waris-800 active:scale-95']"
+            >
+              {{ tombolDaftar.label }}
+            </RouterLink>
+          </template>
         </div>
 
         <!-- Tombol hamburger (mobile) -->
         <button
-          class="md:hidden justify-self-end w-11 h-11 grid place-items-center rounded-full border border-waris-900/20 text-waris-900 hover:bg-waris-900/10 transition-all duration-300 active:scale-95"
+          class="lg:hidden justify-self-end w-11 h-11 grid place-items-center rounded-full border border-waris-900/20 text-waris-900 hover:bg-waris-900/10 transition-all duration-300 active:scale-95"
           :aria-expanded="menuBuka"
-          aria-label="Buka/tutup menu navigasi"
+          aria-controls="menu-navigasi"
+          :aria-label="menuBuka ? 'Tutup menu navigasi' : 'Buka menu navigasi'"
           @click="toggleMenu"
         >
           <i :class="menuBuka ? 'fa-solid fa-xmark' : 'fa-solid fa-bars'" class="text-lg"></i>
@@ -105,7 +136,7 @@ const kelasTautan = 'px-3 lg:px-4 py-2 rounded-lg text-sm font-bold whitespace-n
 
       <!-- Menu mobile -->
       <transition name="fade">
-        <div v-if="menuBuka" class="md:hidden px-4 pb-4">
+        <div v-if="menuBuka" id="menu-navigasi" class="lg:hidden max-h-[calc(100vh-7rem)] overflow-y-auto px-4 pb-4">
           <div class="flex flex-col gap-1 rounded-lg border border-waris-900/10 bg-cream p-3">
             <RouterLink
               v-for="t in tautan"
@@ -121,25 +152,40 @@ const kelasTautan = 'px-3 lg:px-4 py-2 rounded-lg text-sm font-bold whitespace-n
             >
               <i :class="t.ikon" class="w-5 text-center"></i>{{ t.label }}
             </RouterLink>
-            <RouterLink
-              :to="tombolMasuk.path"
-              class="px-4 py-3 rounded-lg text-sm font-bold flex items-center gap-3 transition-all duration-300"
-              :class="
-                aktif(tombolMasuk.path)
-                  ? 'bg-waris-900/10 text-waris-900'
-                  : 'text-ink/75 hover:bg-waris-900/10 hover:text-waris-900'
-              "
-              @click="tutupMenu"
-            >
-              <i :class="tombolMasuk.ikon" class="w-5 text-center"></i>{{ tombolMasuk.label }}
-            </RouterLink>
-            <RouterLink
-              :to="tombolDaftar.path"
-              class="px-4 py-3 rounded-lg bg-waris-900 text-white text-sm font-bold flex items-center gap-3 active:scale-95 transition-all duration-300"
-              @click="tutupMenu"
-            >
-              <i :class="tombolDaftar.ikon" class="w-5 text-center"></i>{{ tombolDaftar.label }}
-            </RouterLink>
+            <template v-if="pengguna">
+              <p class="px-4 py-3 text-sm font-bold text-waris-900 flex items-center gap-3 border-b border-waris-900/10">
+                <i class="fa-solid fa-circle-user w-5 text-center" aria-hidden="true"></i>
+                <span class="truncate">{{ pengguna.nama }}</span>
+              </p>
+              <button
+                type="button"
+                class="px-4 py-3 rounded-lg text-sm font-bold flex items-center gap-3 text-ink/75 hover:bg-waris-900/10 hover:text-waris-900 transition-all duration-300"
+                @click="keluar"
+              >
+                <i class="fa-solid fa-right-from-bracket w-5 text-center" aria-hidden="true"></i>Keluar
+              </button>
+            </template>
+            <template v-else>
+              <RouterLink
+                :to="tombolMasuk.path"
+                class="px-4 py-3 rounded-lg text-sm font-bold flex items-center gap-3 transition-all duration-300"
+                :class="
+                  aktif(tombolMasuk.path)
+                    ? 'bg-waris-900/10 text-waris-900'
+                    : 'text-ink/75 hover:bg-waris-900/10 hover:text-waris-900'
+                "
+                @click="tutupMenu"
+              >
+                <i :class="tombolMasuk.ikon" class="w-5 text-center"></i>{{ tombolMasuk.label }}
+              </RouterLink>
+              <RouterLink
+                :to="tombolDaftar.path"
+                class="px-4 py-3 rounded-lg bg-waris-900 text-white text-sm font-bold flex items-center gap-3 active:scale-95 transition-all duration-300"
+                @click="tutupMenu"
+              >
+                <i :class="tombolDaftar.ikon" class="w-5 text-center"></i>{{ tombolDaftar.label }}
+              </RouterLink>
+            </template>
           </div>
         </div>
       </transition>

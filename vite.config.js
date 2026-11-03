@@ -120,9 +120,12 @@ function apiLokalDev() {
       server.httpServer?.once('listening', () => {
         const { logger } = server.config
         const tanda = (kunci) => (process.env[kunci] ? 'terisi' : 'KOSONG')
-        logger.info('  API lokal: /api/chat + /api/auth/register + /api/auth/login aktif')
+        logger.info('  API lokal: /api/chat + /api/auth/* + /api/riwayat + /api/laporan aktif')
         logger.info(
-          `  Kunci api : GEMINI_API_KEY ${tanda('GEMINI_API_KEY')} | DATABASE_URL ${tanda('DATABASE_URL')} | JWT_SECRET ${tanda('JWT_SECRET')}`,
+          `  Kunci api : GEMINI ${tanda('GEMINI_API_KEY')} | DEEPSEEK ${tanda('DEEPSEEK_API_KEY')} | OPENAI ${tanda('OPENAI_API_KEY')}`,
+        )
+        logger.info(
+          `  Lainnya   : DATABASE_URL ${tanda('DATABASE_URL')} | JWT_SECRET ${tanda('JWT_SECRET')}`,
         )
       })
     },

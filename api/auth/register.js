@@ -5,23 +5,32 @@ import jwt from 'jsonwebtoken'
 import { tanya } from '../lib/db.js'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// Minimal 8 karakter, wajib mengandung huruf dan angka (samakan dengan frontend).
+const PASSWORD_RE = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Gunakan POST' })
 
   try {
     const { nama = '', email = '', password = '' } = req.body ?? {}
-    if (!String(nama).trim() || !EMAIL_RE.test(String(email)) || String(password).length < 6) {
-      return res.status(400).json({ error: 'Nama, email valid, dan password min. 6 karakter wajib diisi' })
-    }
+    const namaBersih = String(nama).trim()
     const surel = String(email).toLowerCase()
+
+    if (!namaBersih) return res.status(400).json({ error: 'Nama wajib diisi' })
+    if (!EMAIL_RE.test(surel)) return res.status(400).json({ error: 'Format email tidak valid' })
+    if (!PASSWORD_RE.test(String(password))) {
+      return res.status(400).json({
+        error: 'Password minimal 8 karakter, kombinasi huruf dan angka',
+      })
+    }
+
     const ada = await tanya('SELECT id FROM users WHERE email = $1', [surel])
     if (ada.rowCount) return res.status(409).json({ error: 'Email sudah terdaftar, silakan login' })
 
     const hash = await bcrypt.hash(String(password), 10)
     const q = await tanya(
       'INSERT INTO users (nama, email, password_hash) VALUES ($1, $2, $3) RETURNING id, nama, email, created_at',
-      [String(nama).trim(), surel, hash],
+      [namaBersih, surel, hash],
     )
     const user = q.rows[0]
     const token = jwt.sign({ uid: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '7d' })

@@ -1,4 +1,6 @@
 <script setup>
+import BrandLogo from './BrandLogo.vue'
+
 defineProps({
   terbuka: { type: Boolean, default: false },
 })
@@ -14,9 +16,7 @@ defineEmits(['tutup'])
     >
       <div class="modal-card bg-cream rounded-xl max-w-lg w-full p-6 sm:p-8 shadow-float border border-waris-900/10 max-h-[85vh] overflow-y-auto">
         <div class="flex items-start justify-between gap-4">
-          <span class="w-14 h-14 rounded-full bg-waris-900 text-white grid place-items-center text-2xl">
-            <i class="fa-solid fa-scale-balanced"></i>
-          </span>
+          <BrandLogo class="w-14 h-14" />
           <button
             aria-label="Tutup modal"
             class="w-11 h-11 grid place-items-center rounded-full bg-waris-900/10 hover:bg-waris-900 hover:text-white text-waris-900 transition-all duration-300 active:scale-95"
