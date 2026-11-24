@@ -1,48 +1,85 @@
 <script setup>
+import { RouterLink } from 'vue-router'
+
 const langkah = [
   {
-    ikon: 'fa-solid fa-message',
-    judul: '1. Bercerita',
-    deskripsi: 'Ceritakan kondisi keluarga dengan bahasa sehari-hari, misal “ayah wafat meninggalkan ibu, istri, dan 2 anak”.',
-  },
-  {
+    nomor: '01',
     ikon: 'fa-solid fa-list-check',
-    judul: '2. Lengkapi Data',
-    deskripsi: 'Chatbot bertanya soal data yang kurang: hutang pewaris, harta bersama, atau status ahli waris.',
+    judul: 'Pemetaan Keluarga & Kewajiban Harta',
+    deskripsi:
+      'Catat siapa saja keluarga yang masih hidup. Sebelum harta dibagi, lunasi hutang pewaris, biaya pemakaman, dan wasiat yang sah (maksimal sepertiga).',
+    link: '/kalkulator',
+    linkLabel: 'Mulai input data',
   },
   {
-    ikon: 'fa-solid fa-calculator',
-    judul: '3. Terima Hasil',
-    deskripsi: 'Dapatkan tabel bagian tiap ahli waris + dalil, penjelasan, sumber, dan disclaimer.',
+    nomor: '02',
+    ikon: 'fa-solid fa-scale-balanced',
+    judul: 'Perhitungan Deterministik Sesuai Syariat',
+    deskripsi:
+      'Mesin faraid menentukan porsi pasti Ashabul Furudh (1/2, 1/4, 1/8, 2/3, 1/3, 1/6) dan mengalokasikan sisa kepada Ashabah secara presisi tanpa rekayasa.',
+    link: '/kalkulator',
+    linkLabel: 'Lihat simulasi',
+  },
+  {
+    nomor: '03',
+    ikon: 'fa-solid fa-comments',
+    judul: 'Penjelasan Berdalil & Tanya Jawab AI',
+    deskripsi:
+      'Pahami alasan di balik setiap angka melalui dalil Al-Qur’an (QS. An-Nisa: 11-12) dan Kompilasi Hukum Islam, atau tanyakan kasus khusus langsung ke asisten AI.',
+    link: '/chat',
+    linkLabel: 'Bercerita ke AI',
   },
 ]
 </script>
 
 <template>
-  <section>
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
-      <div class="text-center max-w-2xl mx-auto">
-        <span class="text-xs font-extrabold tracking-widest text-waris-900 uppercase">
-          <i class="fa-solid fa-route mr-2"></i>Cara Kerja
+  <section class="py-20 sm:py-28 bg-white border-b border-forest-900/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Section Header -->
+      <div class="max-w-3xl mb-16">
+        <span class="text-xs font-bold uppercase tracking-wider text-forest-800">
+          Metodologi WarisMu
         </span>
-        <h2 class="text-4xl sm:text-5xl font-bold mt-3 text-ink">Dari Cerita Menjadi Perhitungan</h2>
-        <p class="text-ink/60 mt-3">Tiga langkah sederhana tanpa formulir rumit, tanpa istilah membingungkan.</p>
+        <h2 class="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-forest-950 mt-2 tracking-tight">
+          Alur Transparan dari Cerita Menjadi Ketetapan Adil
+        </h2>
+        <p class="text-ink-600 text-base sm:text-lg mt-4 leading-relaxed">
+          Tiga tahapan yang memastikan setiap hak tertunaikan sesuai tuntunan syariat, menghindarkan salah paham antarkeluarga.
+        </p>
       </div>
-      <div class="relative grid gap-8 md:grid-cols-3 mt-12">
-        <!-- Konektor lengkung antar langkah (desktop) -->
-        <svg class="hidden md:block absolute top-10 left-[18%] w-[64%] h-8 text-waris-800/40" viewBox="0 0 600 30" fill="none" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M0 22 C 120 4, 200 4, 300 16 S 480 28, 600 10" stroke="currentColor" stroke-width="2.5" stroke-dasharray="8 7" stroke-linecap="round" />
-        </svg>
+
+      <!-- Progressive Grid -->
+      <div class="grid gap-8 md:grid-cols-3">
         <div
           v-for="l in langkah"
-          :key="l.judul"
-          class="relative bg-waris-950 text-white rounded-2xl p-7 shadow-soft hover:-translate-y-1 transition-all duration-300"
+          :key="l.nomor"
+          class="group relative p-7 rounded-2xl border border-forest-900/10 bg-canvas hover:bg-white hover:border-forest-900/25 hover:shadow-card-hover transition-all duration-300 flex flex-col justify-between"
         >
-          <span class="w-14 h-14 rounded-full bg-waris-500 grid place-items-center text-2xl mb-5">
-            <i :class="l.ikon"></i>
-          </span>
-          <h3 class="font-bold text-xl">{{ l.judul }}</h3>
-          <p class="text-sm text-waris-50/75 mt-2 leading-relaxed">{{ l.deskripsi }}</p>
+          <div>
+            <div class="flex items-center justify-between mb-6">
+              <span class="w-12 h-12 rounded-xl bg-forest-100 text-forest-900 grid place-items-center text-lg group-hover:bg-forest-900 group-hover:text-white transition-colors duration-300">
+                <i :class="l.ikon"></i>
+              </span>
+              <span class="font-mono text-2xl font-extrabold text-forest-900/20 group-hover:text-forest-900/40 transition-colors">
+                {{ l.nomor }}
+              </span>
+            </div>
+
+            <h3 class="font-bold text-lg sm:text-xl text-ink-900 mb-3 leading-snug">
+              {{ l.judul }}
+            </h3>
+            <p class="text-sm text-ink-600 leading-relaxed mb-6">
+              {{ l.deskripsi }}
+            </p>
+          </div>
+
+          <RouterLink
+            :to="l.link"
+            class="inline-flex items-center gap-1.5 text-xs font-bold text-forest-800 hover:text-forest-950 group-hover:translate-x-0.5 transition-transform"
+          >
+            <span>{{ l.linkLabel }}</span>
+            <i class="fa-solid fa-arrow-right text-[11px]"></i>
+          </RouterLink>
         </div>
       </div>
     </div>

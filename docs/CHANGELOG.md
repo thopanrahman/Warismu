@@ -18,4 +18,4 @@ Status build: `npm run build` berhasil (48 modules transformed, tanpa error).
 
 - Logika API lokal di `vite.config.js` tidak diubah.
 - Skema database Supabase tidak diubah.
-- Warna utama UI tetap memakai `waris-900` sesuai `DESIGN.md`.
+- Warna utama UI tetap memakai `waris-900` sesuai `docs/design/DESIGN_SYSTEM.md`.

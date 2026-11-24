@@ -2,14 +2,18 @@
 //   1. ekstrakData()   -> cerita user menjadi JSON terstruktur (tanpa menghitung waris)
 //   2. jelaskanHasil() -> narasi dalil berdasarkan hasil hitung deterministik
 //
-// Urutan fallback (berhenti pada penyedia pertama yang berhasil):
-//   1. Gemini   : gemini-3.5-flash  ->  gemini-flash-lite
-//   2. DeepSeek : deepseek-chat                      (OpenAI-compatible)
-//   3. OpenAI   : gpt-4o-mini                        (OpenAI-compatible)
-//   4. Semua gagal -> mockResponse() dipakai api/chat.js
+// Urutan fallback default (berhenti pada penyedia pertama yang berhasil):
+//   1. Gemini     : gemini-3.5-flash-lite -> gemini-flash-lite-latest
+//   2. DeepSeek   : deepseek-v4.1-flash (Zro MoonMath.ai: https://zro.moonmath.ai/v1)
+//   3. OpenRouter : openai/gpt-4o-mini (https://openrouter.ai/api/v1)
+//   4. NVIDIA     : daftar model di NVIDIA_MODELS (cadangan terakhir sebelum Mock, fail-fast)
+//   5. OpenAI     : gpt-4o-mini (opsional jika OPENAI_API_KEY diisi)
+//   6. Semua gagal -> mockResponse() dipakai api/chat.js
 //
+// Urutan grup bisa diubah lewat LLM_PROVIDER_ORDER (mis. "gemini,deepseek,openrouter,nvidia").
 // Semua panggilan memakai fetch murni (tanpa SDK), timeout default 15 detik per
-// penyedia (LLM_TIMEOUT_MS) dengan pagu total 45 detik (LLM_TOTAL_TIMEOUT_MS).
+// penyedia (LLM_TIMEOUT_MS, NVIDIA_TIMEOUT_MS maksimal 10-15s fail-fast) dengan pagu total 60 detik
+// (LLM_TOTAL_TIMEOUT_MS).
 //
 // Kontrak balasan ke frontend tetap:
 // { balas, tanya_lanjutan[], hasil{judul,bagian[],catatan}|null,
@@ -20,20 +24,62 @@ export const SUMBER_DEFAULT = 'QS. An-Nisa: 11–12, 176; KHI Buku II'
 export const DISCLAIMER_DEFAULT =
   'Hasil ini simulasi edukatif, bukan fatwa/putusan hukum. Konsultasikan ke ahli faraid atau Pengadilan Agama.'
 
-// Model Gemini: model utama dulu, lalu varian "lite" yang lebih ringan/cepat.
-// Catatan: nama polos "gemini-flash-lite" tidak terdaftar di API (404), jadi
-// dipakai nama resmi server: gemini-3.5-flash-lite -> gemini-flash-lite-latest.
-const MODEL_GEMINI = process.env.GEMINI_MODEL || 'gemini-3.5-flash'
-const MODEL_GEMINI_CADANGAN = (process.env.GEMINI_MODEL_CADANGAN || 'gemini-3.5-flash-lite,gemini-flash-lite-latest')
+// Model Gemini: varian "lite" dipakai sebagai default karena lebih cepat dan
+// stabil (gemini-3.5-flash sering 503 "high demand"). Nama polos
+// "gemini-flash-lite" tidak terdaftar di API (404), jadi dipakai nama resmi
+// server: gemini-3.5-flash-lite -> gemini-flash-lite-latest.
+const MODEL_GEMINI = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'
+const MODEL_GEMINI_CADANGAN = (process.env.GEMINI_MODEL_CADANGAN || 'gemini-3.5-flash,gemini-flash-lite-latest')
   .split(',')
   .map((m) => m.trim())
   .filter(Boolean)
 
-const ENDPOINT_DEEPSEEK = 'https://api.deepseek.com/chat/completions'
-const ENDPOINT_OPENAI = 'https://api.openai.com/v1/chat/completions'
+// Konfigurasi endpoint OpenAI-compatible (DeepSeek Zro, OpenRouter, OpenAI, NVIDIA)
+const DEEPSEEK_BASE_URL_DEFAULT = 'https://zro.moonmath.ai/v1'
+const DEEPSEEK_MODEL_DEFAULT = 'deepseek-v4.1-flash'
+const OPENROUTER_BASE_URL_DEFAULT = 'https://openrouter.ai/api/v1'
+const OPENROUTER_MODEL_DEFAULT = 'openai/gpt-4o-mini'
+const OPENAI_BASE_URL_DEFAULT = 'https://api.openai.com/v1'
+const OPENAI_MODEL_DEFAULT = 'gpt-4o-mini'
+const NVIDIA_BASE_URL_DEFAULT = 'https://integrate.api.nvidia.com/v1'
+
+function urlChatDeepSeek() {
+  if (process.env.DEEPSEEK_API_URL) return process.env.DEEPSEEK_API_URL
+  const base = (process.env.DEEPSEEK_BASE_URL || DEEPSEEK_BASE_URL_DEFAULT).trim().replace(/\/+$/, '')
+  return base.endsWith('/chat/completions') ? base : `${base}/chat/completions`
+}
+
+function urlChatOpenRouter() {
+  if (process.env.OPENROUTER_API_URL) return process.env.OPENROUTER_API_URL
+  const base = (process.env.OPENROUTER_BASE_URL || OPENROUTER_BASE_URL_DEFAULT).trim().replace(/\/+$/, '')
+  return base.endsWith('/chat/completions') ? base : `${base}/chat/completions`
+}
+
+function urlChatOpenAI() {
+  if (process.env.OPENAI_API_URL) return process.env.OPENAI_API_URL
+  const base = (process.env.OPENAI_BASE_URL || OPENAI_BASE_URL_DEFAULT).trim().replace(/\/+$/, '')
+  return base.endsWith('/chat/completions') ? base : `${base}/chat/completions`
+}
+
+function urlChatNvidia() {
+  if (process.env.NVIDIA_API_URL) return process.env.NVIDIA_API_URL
+  const base = (process.env.NVIDIA_BASE_URL || NVIDIA_BASE_URL_DEFAULT).trim().replace(/\/+$/, '')
+  return base.endsWith('/chat/completions') ? base : `${base}/chat/completions`
+}
+
+// Model NVIDIA yang dicoba berurutan jika grup NVIDIA aktif.
+// openai/gpt-oss-20b sudah ditiadakan karena end-of-life (HTTP 410).
+const MODEL_NVIDIA_BAWAAN = [
+  'minimaxai/minimax-m3.1-flash',
+  'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning',
+  'deepseek-ai/deepseek-v4.1-flash',
+]
 
 const BATAS_PENYEDIA_DEFAULT = 15_000
-const BATAS_TOTAL_DEFAULT = 45_000
+const BATAS_TOTAL_DEFAULT = 60_000
+const BATAS_NVIDIA_DEFAULT = 12_000 // Ketat fail-fast: maksimal 10-15 detik
+const BATAS_DEEPSEEK_DEFAULT = 30_000 // Berikan ruang reasoning pada DeepSeek (Zro)
+const BATAS_TOKEN_DEFAULT = 4_096
 // Sisa waktu minimum agar satu percobaan masih layak dijalankan.
 const SISA_MINIMUM = 2_000
 
@@ -119,6 +165,23 @@ ATURAN:
 - Jangan memberikan fatwa atau putusan hukum. Ingatkan bahwa ini simulasi edukatif.
 - "tanya_lanjutan" biasanya [], kecuali ada informasi penting yang benar-benar perlu diklarifikasi.
 - "catatan" boleh berisi ringkasan asumsi dan peringatan, bukan angka baru.`
+
+// Prompt khusus edukasi Q&A Fikih Waris (UC-11)
+const PROMPT_QNA = `Kamu adalah asisten edukasi fikih waris Islam (faraid) WarisMu untuk Muslim Indonesia.
+
+TUGASMU:
+1. Menjawab pertanyaan pengguna seputar hukum waris Islam (faraid), Kompilasi Hukum Islam (KHI) di Indonesia, konsep dan istilah faraid (seperti dzawil furudh, ashabah, hijab/mahjub, aul, radd, gharrawain, musytarakah, munasakhat, dzawil arham, kalalah, bagian masing-masing ahli waris), serta dalil-dalilnya secara langsung, jelas, dan mendidik.
+2. JANGAN memaksa pengguna untuk memulai simulasi perhitungan waris atau memasukkan data keluarga/harta baru jika pengguna sedang bertanya konsep, dalil, atau penjelasan fikih.
+3. Berikan jawaban yang ramah, santun, terstruktur, mudah dipahami masyarakat awam, dan berbasis Al-Qur'an (khususnya QS. An-Nisa: 11, 12, 176) serta KHI Buku II.
+4. Gunakan teks biasa dan baris baru yang rapi; jangan memakai tabel markdown atau simbol rumit di dalam "balas".
+
+Balas HANYA dengan JSON valid tanpa markdown, dengan bentuk:
+{
+  "balas": "jawaban edukatif lengkap, terstruktur, dan ramah dalam bahasa Indonesia",
+  "tanya_lanjutan": ["2-3 saran pertanyaan atau topik fikih terkait yang relevan untuk dipelajari"],
+  "sumber": "dalil Al-Qur'an/Hadis atau rujukan pasal KHI yang relevan",
+  "disclaimer": "${DISCLAIMER_DEFAULT}"
+}`
 
 // ============ UTILITAS ============
 
@@ -344,30 +407,108 @@ async function panggilGemini(promptSistem, isi, temperature, budgetMs) {
   return terakhir
 }
 
-// ============ 2 & 3. DEEPSEEK / OPENAI (OpenAI-compatible) ============
+// ============ 2-4. NVIDIA / DEEPSEEK / OPENAI (OpenAI-compatible) ============
+
+function daftarModelNvidia() {
+  return String(process.env.NVIDIA_MODELS || MODEL_NVIDIA_BAWAAN.join(','))
+    .split(',')
+    .map((m) => m.trim())
+    .filter((m) => Boolean(m) && m !== 'openai/gpt-oss-20b')
+}
+
+function labelModelNvidia(model) {
+  if (model.startsWith('deepseek-ai/')) return `NVIDIA DeepSeek (${model})`
+  if (model.startsWith('openai/')) return `NVIDIA OpenAI (${model})`
+  return `NVIDIA (${model})`
+}
 
 function daftarPenyediaChat() {
+  const kunciNvidia = process.env.NVIDIA_API_KEY
+  const urlNvidia = urlChatNvidia()
+  // Fail-fast timeout untuk NVIDIA: ketat maksimal 15 detik (bawaan 12 detik)
+  const batasNvidia = Math.min(envNomor('NVIDIA_TIMEOUT_MS', BATAS_NVIDIA_DEFAULT), 15_000)
+  // Model reasoning NVIDIA bisa menghabiskan seluruh kuota token untuk berpikir
+  // sebelum menulis jawaban. "low" membuatnya lebih cepat dan cukup untuk JSON.
+  const effortNvidia = process.env.NVIDIA_REASONING_EFFORT || 'low'
+
+  const nvidia = daftarModelNvidia().map((model) => ({
+    id: `nvidia:${model}`,
+    grup: 'nvidia',
+    label: labelModelNvidia(model),
+    url: urlNvidia,
+    kunci: kunciNvidia,
+    model,
+    timeoutMs: batasNvidia,
+    reasoningEffort: effortNvidia,
+  }))
+
   return [
     {
       id: 'deepseek',
-      label: 'DeepSeek',
-      url: process.env.DEEPSEEK_API_URL || ENDPOINT_DEEPSEEK,
+      grup: 'deepseek',
+      label: 'DeepSeek (Zro)',
+      url: urlChatDeepSeek(),
       kunci: process.env.DEEPSEEK_API_KEY,
-      model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+      model: process.env.DEEPSEEK_MODEL || DEEPSEEK_MODEL_DEFAULT,
+      timeoutMs: envNomor('DEEPSEEK_TIMEOUT_MS', BATAS_DEEPSEEK_DEFAULT),
+    },
+    {
+      id: 'openrouter',
+      grup: 'openrouter',
+      label: 'OpenRouter',
+      url: urlChatOpenRouter(),
+      kunci: process.env.OPENROUTER_API_KEY,
+      model: process.env.OPENROUTER_MODEL || OPENROUTER_MODEL_DEFAULT,
+      timeoutMs: envNomor('OPENROUTER_TIMEOUT_MS', BATAS_PENYEDIA_DEFAULT),
+      extraHeaders: {
+        'HTTP-Referer': process.env.OPENROUTER_SITE_URL || 'https://warismu.vercel.app',
+        'X-Title': process.env.OPENROUTER_SITE_NAME || 'WarisMu',
+      },
     },
     {
       id: 'openai',
+      grup: 'openai',
       label: 'OpenAI',
-      url: process.env.OPENAI_API_URL || ENDPOINT_OPENAI,
+      url: urlChatOpenAI(),
       kunci: process.env.OPENAI_API_KEY,
-      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      model: process.env.OPENAI_MODEL || OPENAI_MODEL_DEFAULT,
+      timeoutMs: envNomor('OPENAI_TIMEOUT_MS', BATAS_PENYEDIA_DEFAULT),
     },
+    ...nvidia,
   ]
+}
+
+// Urutan grup penyedia. Default: Gemini -> DeepSeek (Zro) -> OpenRouter -> NVIDIA -> OpenAI.
+// NVIDIA ditaruh di belakang karena paling lambat / rawan timeout.
+function urutanPenyedia() {
+  const bawaan = ['gemini', 'deepseek', 'openrouter', 'nvidia', 'openai']
+  const dariEnv = String(process.env.LLM_PROVIDER_ORDER || '')
+    .split(',')
+    .map((g) => g.trim().toLowerCase())
+    .filter(Boolean)
+  // Jika LLM_PROVIDER_ORDER dari .env.local belum menyebut openrouter tetapi OPENROUTER_API_KEY ada,
+  // sisipkan openrouter setelah deepseek (atau sebelum nvidia) agar langsung aktif sebagai fallback.
+  if (dariEnv.length && !dariEnv.includes('openrouter') && process.env.OPENROUTER_API_KEY) {
+    const idxDeepseek = dariEnv.indexOf('deepseek')
+    const idxNvidia = dariEnv.indexOf('nvidia')
+    if (idxDeepseek !== -1) {
+      dariEnv.splice(idxDeepseek + 1, 0, 'openrouter')
+    } else if (idxNvidia !== -1) {
+      dariEnv.splice(idxNvidia, 0, 'openrouter')
+    } else {
+      dariEnv.push('openrouter')
+    }
+  }
+  return [...new Set(dariEnv.length ? dariEnv : bawaan)]
 }
 
 async function panggilChatKompatibel(penyedia, promptSistem, percakapan, temperature, timeoutMs) {
   const kendali = new AbortController()
   const batas = setTimeout(() => kendali.abort(), timeoutMs)
+  const batasToken = Math.min(
+    Number(penyedia.maxTokens) || envNomor('LLM_MAX_TOKENS', BATAS_TOKEN_DEFAULT),
+    4_096,
+  )
 
   try {
     const res = await fetch(penyedia.url, {
@@ -375,11 +516,15 @@ async function panggilChatKompatibel(penyedia, promptSistem, percakapan, tempera
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${penyedia.kunci}`,
+        ...(penyedia.extraHeaders || {}),
       },
       body: JSON.stringify({
         model: penyedia.model,
         messages: pesanChat(percakapan, promptSistem),
         temperature,
+        max_tokens: batasToken,
+        stream: false,
+        ...(penyedia.reasoningEffort ? { reasoning_effort: penyedia.reasoningEffort } : {}),
       }),
       signal: kendali.signal,
     })
@@ -410,7 +555,9 @@ async function panggilChatKompatibel(penyedia, promptSistem, percakapan, tempera
       }
     }
 
-    const teks = String(data.choices?.[0]?.message?.content ?? '')
+    const teks = String(
+      data.choices?.[0]?.message?.content || data.choices?.[0]?.message?.reasoning_content || '',
+    )
     if (!teks.trim()) {
       return {
         ok: false,
@@ -456,6 +603,7 @@ async function panggilChatKompatibel(penyedia, promptSistem, percakapan, tempera
 async function panggilLLM(promptSistem, pesan, riwayat, temperature, konteks = '') {
   const percakapan = susunPercakapan(pesan, riwayat, konteks)
   const batasPenyedia = envNomor('LLM_TIMEOUT_MS', BATAS_PENYEDIA_DEFAULT)
+  const batasGemini = envNomor('GEMINI_TIMEOUT_MS', batasPenyedia)
   const paguTotal = envNomor('LLM_TOTAL_TIMEOUT_MS', BATAS_TOTAL_DEFAULT)
   const mulai = Date.now()
   const jejak = []
@@ -466,50 +614,94 @@ async function panggilLLM(promptSistem, pesan, riwayat, temperature, konteks = '
   let terakhir = {
     ok: false,
     code: 'NO_PROVIDER',
-    error: 'Tidak ada penyedia LLM yang dikonfigurasi (GEMINI/DEEPSEEK/OPENAI_API_KEY kosong)',
+    error:
+      'Semua penyedia LLM gagal atau belum dikonfigurasi (GEMINI/DEEPSEEK/OPENROUTER/NVIDIA/OPENAI)',
   }
 
-  // 1. Gemini
-  if (process.env.GEMINI_API_KEY && bolehLanjut()) {
-    const hasil = await panggilGemini(
-      promptSistem,
-      isiGemini(percakapan),
-      temperature,
-      Math.min(batasPenyedia, sisaTotal()),
-    )
-    if (hasil.ok) return { ...hasil, data: normalkanKeluaran(hasil.data) }
-    jejak.push({ provider: 'gemini', code: hasil.code, status: hasil.status ?? null })
-    terakhir = hasil
-  }
+  const penyediaChat = daftarPenyediaChat()
 
-  // 2. DeepSeek, 3. OpenAI (keduanya lewat jalur chat/completions yang sama)
-  for (const penyedia of daftarPenyediaChat()) {
-    if (!penyedia.kunci) {
-      jejak.push({ provider: penyedia.id, code: 'NO_KEY' })
+  for (const grup of urutanPenyedia()) {
+    // 1. Gemini memakai format payload sendiri.
+    if (grup === 'gemini') {
+      const kunciGemini = process.env.GEMINI_API_KEY ? String(process.env.GEMINI_API_KEY).trim() : ''
+      if (!kunciGemini) {
+        console.log('[LLM] Provider Gemini dilewati: GEMINI_API_KEY tidak dikonfigurasi')
+        jejak.push({ provider: 'gemini', code: 'SKIPPED_NO_KEY' })
+        continue
+      }
+      if (!bolehLanjut()) {
+        console.warn(`[LLM] Provider Gemini dilewati: pagu waktu total menipis (${sisaTotal()} ms)`)
+        jejak.push({ provider: 'gemini', code: 'SKIPPED_BUDGET' })
+        continue
+      }
+
+      const hasil = await panggilGemini(
+        promptSistem,
+        isiGemini(percakapan),
+        temperature,
+        Math.min(batasGemini, sisaTotal()),
+      )
+      if (hasil.ok) {
+        console.log(`[LLM] Berhasil menggunakan Gemini (${hasil.model})`)
+        return { ...hasil, data: normalkanKeluaran(hasil.data) }
+      }
+      console.warn(`[LLM] Gemini gagal (${hasil.code}: ${hasil.error})`)
+      jejak.push({ provider: 'gemini', code: hasil.code, status: hasil.status ?? null })
+      terakhir = hasil
       continue
     }
-    if (!bolehLanjut()) {
-      jejak.push({ provider: penyedia.id, code: 'SKIPPED_BUDGET' })
+
+    // 2. DeepSeek (Zro), 3. OpenAI, 4. NVIDIA: jalur chat/completions kompatibel OpenAI.
+    const daftar = penyediaChat.filter((penyedia) => penyedia.grup === grup)
+    if (!daftar.length) {
+      jejak.push({ provider: grup, code: 'UNKNOWN_PROVIDER' })
       continue
     }
 
-    const hasil = await panggilChatKompatibel(
-      penyedia,
-      promptSistem,
-      percakapan,
-      temperature,
-      Math.min(batasPenyedia, sisaTotal()),
-    )
-    if (hasil.ok) {
-      console.warn(`[LLM] Gemini tidak tersedia, memakai ${penyedia.label} (${penyedia.model})`)
-      return { ...hasil, data: normalkanKeluaran(hasil.data) }
-    }
+    for (const penyedia of daftar) {
+      const kunci = penyedia.kunci ? String(penyedia.kunci).trim() : ''
+      if (!kunci) {
+        console.log(`[LLM] Provider ${penyedia.label} dilewati: API key tidak dikonfigurasi`)
+        jejak.push({ provider: penyedia.id, code: 'SKIPPED_NO_KEY' })
+        if (grup === 'nvidia') break
+        continue
+      }
+      if (!bolehLanjut()) {
+        console.warn(`[LLM] Provider ${penyedia.label} dilewati: pagu waktu total menipis (${sisaTotal()} ms)`)
+        jejak.push({ provider: penyedia.id, code: 'SKIPPED_BUDGET' })
+        continue
+      }
 
-    jejak.push({ provider: penyedia.id, code: hasil.code, status: hasil.status ?? null })
-    terakhir = hasil
+      const batasWaktuPenyedia = Math.min(penyedia.timeoutMs ?? batasPenyedia, sisaTotal())
+      const hasil = await panggilChatKompatibel(
+        penyedia,
+        promptSistem,
+        percakapan,
+        temperature,
+        batasWaktuPenyedia,
+      )
+      if (hasil.ok) {
+        console.log(`[LLM] Berhasil menggunakan ${penyedia.label} (${penyedia.model})`)
+        return { ...hasil, data: normalkanKeluaran(hasil.data) }
+      }
+
+      jejak.push({ provider: penyedia.id, code: hasil.code, status: hasil.status ?? null })
+      terakhir = hasil
+
+      // FAIL-FAST KHUSUS NVIDIA:
+      // Model NVIDIA sering hang atau NETWORK_ERROR. Jika terjadi kegagalan atau timeout,
+      // jangan buang waktu mencoba model NVIDIA lainnya yang akan menghabiskan pagu waktu.
+      // Langsung lanjutkan ke provider berikutnya di urutan fallback.
+      if (grup === 'nvidia') {
+        console.warn(
+          `[NVIDIA] Fail-fast: model ${penyedia.model} gagal (${hasil.code}: ${hasil.error}). Melewati model NVIDIA lainnya dan beralih ke provider berikutnya.`,
+        )
+        break
+      }
+    }
   }
 
-  console.error('[LLM] semua penyedia gagal:', JSON.stringify(jejak))
+  console.warn('[LLM] semua penyedia gagal atau dilewati:', JSON.stringify(jejak))
   return { ...terakhir, ok: false, jejak }
 }
 
@@ -539,6 +731,32 @@ export function mockResponse(pesan, catatanServer = '') {
   }
 }
 
+export function mockQnAResponse(pesan, catatanServer = '') {
+  const ringkas = String(pesan ?? '').trim().slice(0, 100)
+  return {
+    balas:
+      `Terkait pertanyaan Anda${ringkas ? ` mengenai "${ringkas}"` : ''}: ` +
+      'Dalam fikih waris Islam (faraid), pembagian harta pusaka didasarkan pada ketentuan Al-Qur\'an ' +
+      '(khususnya QS. An-Nisa ayat 11, 12, dan 176) serta Kompilasi Hukum Islam (KHI). ' +
+      'Ketentuan hak waris didasarkan pada hubungan nasab dan perkawinan yang sah, setelah kewajiban jenazah ' +
+      'seperti pengurusan jenazah, pelunasan hutang, dan pelaksanaan wasiat (maksimal 1/3) diselesaikan. ' +
+      '(Mode mock — sambungkan API key LLM untuk jawaban penjelasan lebih mendalam).',
+    tanya_lanjutan: [
+      'Siapa saja yang termasuk golongan dzawil furudh dan berapa bagiannya?',
+      'Apa perbedaan antara ashabah binafsihi, bi ghairihi, dan ma\'a ghairihi?',
+      'Bagaimana aturan hijab (penghalang) waris dalam KHI dan fikih?',
+    ],
+    hasil: null,
+    sumber: SUMBER_DEFAULT,
+    disclaimer: DISCLAIMER_DEFAULT,
+    selesai: true,
+    dipakaiMock: true,
+    mode: 'mock',
+    alasanMock: 'llm',
+    ...(catatanServer ? { catatanServer } : {}),
+  }
+}
+
 // Nama lama dipertahankan agar pemanggil lama tidak perlu diubah sekaligus.
 export const balasanMock = mockResponse
 
@@ -546,6 +764,10 @@ export const balasanMock = mockResponse
 
 export async function ekstrakData(pesan, riwayat = []) {
   return panggilLLM(PROMPT_EKSTRAKSI, pesan, riwayat, 0.1)
+}
+
+export async function jawabQnA(pesan, riwayat = []) {
+  return panggilLLM(PROMPT_QNA, pesan, riwayat, 0.4)
 }
 
 export async function jelaskanHasil({ pesan, riwayat = [], data, hasilHitung, tirkah, catatanTirkah = [] }) {

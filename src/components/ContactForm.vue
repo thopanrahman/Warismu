@@ -1,25 +1,35 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
 
-// Fitur interaktif 2: form dengan validasi (nama, email, pesan)
-const form = reactive({ nama: '', email: '', topik: 'Pertanyaan umum', pesan: '' })
-const error = reactive({ nama: '', email: '', pesan: '' })
+const form = reactive({
+  nama: '',
+  email: '',
+  topik: 'Pertanyaan umum',
+  pesan: '',
+})
+
+const error = reactive({
+  nama: '',
+  email: '',
+  pesan: '',
+})
+
 const terkirim = ref(false)
 
 const bolehKirim = computed(
-  () => form.nama.trim() && form.email.trim() && form.pesan.trim() && !error.nama && !error.email && !error.pesan,
+  () =>
+    form.nama.trim() &&
+    form.email.trim() &&
+    form.pesan.trim() &&
+    !error.nama &&
+    !error.email &&
+    !error.pesan,
 )
 
-// Satu kelas untuk semua kontrol input: membulat, garis tepi hijau muda,
-// latar putih kehijauan agar terpisah dari kartu putih.
-const kelasKontrol =
-  'w-full rounded-xl border bg-paper px-4 text-sm text-ink placeholder:text-ink/40 outline-none transition-all duration-300 focus:border-waris-700 focus:ring-2 focus:ring-waris-700/20'
-const kelasLabel = 'block text-sm font-bold text-waris-950'
-
 function validasiNama() {
-  error.nama =
-    form.nama.trim().length < 3 ? 'Nama minimal 3 karakter.' : ''
+  error.nama = form.nama.trim().length < 3 ? 'Nama minimal 3 karakter.' : ''
 }
+
 function validasiEmail() {
   const pola = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   error.email = !form.email.trim()
@@ -28,9 +38,9 @@ function validasiEmail() {
       ? 'Format email tidak valid.'
       : ''
 }
+
 function validasiPesan() {
-  error.pesan =
-    form.pesan.trim().length < 10 ? 'Pesan minimal 10 karakter.' : ''
+  error.pesan = form.pesan.trim().length < 10 ? 'Pesan minimal 10 karakter.' : ''
 }
 
 function kirim() {
@@ -51,106 +61,112 @@ function ulangi() {
 </script>
 
 <template>
-  <div class="bg-white rounded-3xl border border-waris-900/10 shadow-soft p-6 sm:p-8 lg:p-10">
-    <!-- Keadaan terkirim -->
-    <div v-if="terkirim" class="text-center py-10">
+  <div class="bg-white rounded-3xl border border-forest-900/10 shadow-card p-6 sm:p-8 lg:p-10">
+    <!-- State Pesan Terkirim Sukses -->
+    <div v-if="terkirim" class="text-center py-8">
       <span
-        class="w-16 h-16 rounded-full bg-waris-100 text-waris-900 grid place-items-center text-3xl mx-auto mb-5"
+        class="w-16 h-16 rounded-2xl bg-forest-100 text-forest-900 grid place-items-center text-3xl mx-auto mb-4"
       >
         <i class="fa-solid fa-circle-check"></i>
       </span>
-      <h3 class="font-display font-bold text-2xl sm:text-3xl text-waris-950">Pesan Terkirim!</h3>
-      <p class="text-sm text-ink/60 mt-3 max-w-sm mx-auto leading-relaxed">
-        Terima kasih, <strong class="text-waris-950">{{ form.nama }}</strong>. Pesanmu soal
-        “{{ form.topik }}” sudah kami terima (simulasi frontend) dan akan dibalas ke
-        <strong class="text-waris-950">{{ form.email }}</strong>.
+      <h3 class="font-display font-bold text-2xl text-forest-950">Pesan Telah Diterima</h3>
+      <p class="text-xs sm:text-sm text-ink-600 mt-2 max-w-sm mx-auto leading-relaxed">
+        Terima kasih, <strong class="text-ink-900">{{ form.nama }}</strong>. Pesan Anda mengenai topik “{{ form.topik }}” telah tercatat dan akan ditindaklanjuti ke <strong class="text-ink-900">{{ form.email }}</strong>.
       </p>
       <button
-        class="mt-7 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-waris-900 px-8 text-sm font-bold text-white shadow-soft hover:bg-waris-800 hover:scale-105 active:scale-95 transition-all duration-300"
+        type="button"
+        class="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-forest-900 px-6 text-xs font-bold text-white shadow-subtle hover:bg-forest-800 active:scale-95 transition-all"
         @click="ulangi"
       >
-        <i class="fa-solid fa-rotate-left"></i> Kirim Pesan Lain
+        <i class="fa-solid fa-rotate-left"></i>
+        <span>Kirim Pesan Lain</span>
       </button>
     </div>
 
-    <form v-else novalidate class="grid gap-5" @submit.prevent="kirim">
-      <!-- Baris pertama: nama + email berdampingan -->
-      <div class="grid gap-5 sm:grid-cols-2">
+    <!-- Formulir Kontak -->
+    <form v-else novalidate class="space-y-4" @submit.prevent="kirim">
+      <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label for="nama" :class="kelasLabel">Nama Lengkap</label>
+          <label for="inputNama" class="block text-xs font-bold uppercase tracking-wider text-ink-700 mb-1.5">
+            Nama Lengkap
+          </label>
           <input
-            id="nama"
+            id="inputNama"
             v-model="form.nama"
             type="text"
-            placeholder="cth: Aisyah Putri"
-            :class="[kelasKontrol, 'mt-2 h-12', error.nama ? 'border-danger' : 'border-waris-900/15']"
+            placeholder="Contoh: Ahmad Fauzan"
+            class="w-full h-11 px-4 rounded-xl border bg-canvas text-xs text-ink-900 placeholder:text-ink-400 outline-none focus:border-forest-800 focus:ring-2 focus:ring-forest-800/20 transition-all"
+            :class="error.nama ? 'border-danger-DEFAULT' : 'border-forest-900/15'"
             @input="validasiNama"
           />
-          <p v-if="error.nama" class="text-xs text-danger font-bold mt-2">{{ error.nama }}</p>
+          <p v-if="error.nama" class="text-[11px] text-danger-DEFAULT font-bold mt-1">{{ error.nama }}</p>
         </div>
+
         <div>
-          <label for="email" :class="kelasLabel">Email</label>
+          <label for="inputEmail" class="block text-xs font-bold uppercase tracking-wider text-ink-700 mb-1.5">
+            Alamat Email
+          </label>
           <input
-            id="email"
+            id="inputEmail"
             v-model="form.email"
             type="email"
-            placeholder="cth: aisyah@email.com"
-            :class="[kelasKontrol, 'mt-2 h-12', error.email ? 'border-danger' : 'border-waris-900/15']"
+            placeholder="contoh@domain.com"
+            class="w-full h-11 px-4 rounded-xl border bg-canvas text-xs text-ink-900 placeholder:text-ink-400 outline-none focus:border-forest-800 focus:ring-2 focus:ring-forest-800/20 transition-all"
+            :class="error.email ? 'border-danger-DEFAULT' : 'border-forest-900/15'"
             @input="validasiEmail"
           />
-          <p v-if="error.email" class="text-xs text-danger font-bold mt-2">{{ error.email }}</p>
+          <p v-if="error.email" class="text-[11px] text-danger-DEFAULT font-bold mt-1">{{ error.email }}</p>
         </div>
       </div>
 
-      <!-- Topik: selebar formulir -->
       <div>
-        <label for="topik" :class="kelasLabel">Topik Pesan</label>
+        <label for="inputTopik" class="block text-xs font-bold uppercase tracking-wider text-ink-700 mb-1.5">
+          Topik Pertanyaan
+        </label>
         <select
-          id="topik"
+          id="inputTopik"
           v-model="form.topik"
-          :class="[kelasKontrol, 'mt-2 h-12 border-waris-900/15']"
+          class="w-full h-11 px-4 rounded-xl border border-forest-900/15 bg-canvas text-xs text-ink-900 outline-none focus:border-forest-800 focus:ring-2 focus:ring-forest-800/20"
         >
-          <option>Pertanyaan umum</option>
-          <option>Konsultasi faraid</option>
-          <option>Lapor kesalahan konten</option>
-          <option>Kerja sama / kemitraan</option>
+          <option>Pertanyaan umum seputar faraid</option>
+          <option>Konsultasi perhitungan khusus</option>
+          <option>Koreksi atau masukan dalil</option>
+          <option>Kerja sama & kemitraan</option>
         </select>
       </div>
 
-      <!-- Pesan + penghitung karakter -->
       <div>
-        <div class="flex items-center justify-between gap-4">
-          <label for="pesan" :class="kelasLabel">Pesan</label>
-          <span class="text-xs font-bold text-waris-900/60">{{ form.pesan.length }}/500</span>
+        <div class="flex items-center justify-between mb-1.5">
+          <label for="inputPesan" class="text-xs font-bold uppercase tracking-wider text-ink-700">
+            Isi Pesan
+          </label>
+          <span class="text-[11px] font-mono text-ink-400">{{ form.pesan.length }}/500</span>
         </div>
         <textarea
-          id="pesan"
+          id="inputPesan"
           v-model="form.pesan"
-          rows="6"
+          rows="5"
           maxlength="500"
-          placeholder="Tulis pesanmu di sini (min. 10 karakter)…"
-          :class="[
-            kelasKontrol,
-            'mt-2 py-3.5 resize-none',
-            error.pesan ? 'border-danger' : 'border-waris-900/15',
-          ]"
+          placeholder="Tuliskan pertanyaan atau saran Anda dengan jelas…"
+          class="w-full p-4 rounded-xl border bg-canvas text-xs text-ink-900 placeholder:text-ink-400 outline-none focus:border-forest-800 focus:ring-2 focus:ring-forest-800/20 resize-none transition-all"
+          :class="error.pesan ? 'border-danger-DEFAULT' : 'border-forest-900/15'"
           @input="validasiPesan"
         ></textarea>
-        <p v-if="error.pesan" class="text-xs text-danger font-bold mt-2">{{ error.pesan }}</p>
+        <p v-if="error.pesan" class="text-[11px] text-danger-DEFAULT font-bold mt-1">{{ error.pesan }}</p>
       </div>
 
-      <!-- Tombol selebar formulir; hijau pucat saat formulir belum lengkap -->
       <button
         type="submit"
         :disabled="!bolehKirim"
-        class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-bold transition-all duration-300"
+        class="w-full h-11 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2"
         :class="
           bolehKirim
-            ? 'bg-waris-900 text-white shadow-soft hover:bg-waris-800 hover:scale-[1.01] active:scale-95'
-            : 'bg-waris-200/70 text-waris-900/45 cursor-not-allowed'
+            ? 'bg-forest-900 text-white shadow-subtle hover:bg-forest-800 active:scale-95'
+            : 'bg-forest-100 text-forest-800/40 cursor-not-allowed'
         "
       >
-        <i class="fa-solid fa-paper-plane"></i> Kirim Pesan
+        <i class="fa-solid fa-paper-plane text-xs"></i>
+        <span>Kirim Pesan</span>
       </button>
     </form>
   </div>

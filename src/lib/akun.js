@@ -58,3 +58,39 @@ export async function panggilApi(jalur, opsi = {}) {
   }
   return { ok: res.ok, status: res.status, data }
 }
+
+// Migrasi sesi konsultasi tamu ke database user baru (UC-05, FR-28).
+// Dipanggil setelah login atau registrasi berhasil jika ada data di sessionStorage.
+export async function migrasiSesiTamu(tokenKustom = '') {
+  try {
+    const mentah = sessionStorage.getItem('migrasi_chat')
+    if (!mentah) return
+    const parsed = JSON.parse(mentah)
+    const pesan = Array.isArray(parsed) ? parsed : (parsed?.pesan || [])
+    if (Array.isArray(pesan) && pesan.length > 0) {
+      const judul = (pesan[0]?.teks || 'Konsultasi Tamu')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 38)
+      const token = tokenKustom || ambilToken()
+      if (token) {
+        await fetch('/api/riwayat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ judul, pesan }),
+        })
+      }
+    }
+  } catch (err) {
+    console.error('[Migrasi] Gagal migrasi riwayat tamu:', err)
+  } finally {
+    try {
+      sessionStorage.removeItem('migrasi_chat')
+    } catch {
+      /* abaikan */
+    }
+  }
+}

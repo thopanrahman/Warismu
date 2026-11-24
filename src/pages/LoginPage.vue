@@ -1,7 +1,8 @@
 <script setup>
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { simpanLogin } from '../lib/akun.js'
+import { migrasiSesiTamu, simpanLogin } from '../lib/akun.js'
+import BrandLogo from '../components/BrandLogo.vue'
 
 const router = useRouter()
 const email = ref('')
@@ -13,16 +14,14 @@ const sibuk = ref(false)
 const BATAS_WAKTU_API = 10_000
 const PESAN_KONEKSI = 'Gagal terhubung ke server. Coba lagi nanti.'
 
-// UC-01 (lanjutan) Masuk Akun → POST /api/auth/login
 async function masuk() {
   galat.value = ''
   if (!/.+@.+\..+/.test(email.value) || !password.value) {
-    galat.value = 'Isi email valid dan password.'
+    galat.value = 'Silakan isi alamat email yang valid dan password.'
     return
   }
 
   sibuk.value = true
-  // Batas 10 detik: Supabase/API yang menggantung tidak boleh membuat spinner abadi.
   const kendali = new AbortController()
   const batas = setTimeout(() => kendali.abort(), BATAS_WAKTU_API)
 
@@ -37,16 +36,18 @@ async function masuk() {
     let data = {}
     try {
       data = await res.json()
-    } catch { /* respons kosong / bukan JSON */ }
+    } catch {
+      /* respons non-json */
+    }
 
     if (!res.ok) {
-      // 5xx = server/database bermasalah → pesan koneksi yang seragam.
       if (res.status >= 500) throw new Error(PESAN_KONEKSI)
-      throw new Error(data.error || 'Gagal masuk, coba lagi.')
+      throw new Error(data.error || 'Gagal masuk akun, periksa kembali email & password.')
     }
     if (!data.token || !data.user) throw new Error(PESAN_KONEKSI)
 
     simpanLogin(data.token, data.user)
+    await migrasiSesiTamu(data.token)
     router.push('/chat')
   } catch (e) {
     const gagalKoneksi =
@@ -60,60 +61,82 @@ async function masuk() {
 </script>
 
 <template>
-  <div class="flex-1 flex items-center justify-center px-4 sm:px-6 py-10">
-    <div class="w-full max-w-md bg-cream border border-waris-900/10 rounded-lg shadow-soft p-6 sm:p-8">
-      <span class="w-14 h-14 rounded-full bg-waris-900 text-white grid place-items-center text-xl mx-auto">
-        <i class="fa-solid fa-right-to-bracket"></i>
-      </span>
-      <h1 class="font-display font-bold text-2xl text-center mt-3">Masuk ke WarisMu</h1>
+  <div class="flex-1 flex items-center justify-center px-4 sm:px-6 py-12 sm:py-20 bg-canvas">
+    <div class="w-full max-w-md bg-white border border-forest-900/10 rounded-3xl shadow-card p-6 sm:p-8">
+      <div class="text-center mb-6">
+        <BrandLogo class="w-12 h-12 mx-auto mb-3" />
+        <h1 class="font-display font-bold text-2xl text-forest-950">Masuk ke WarisMu</h1>
+        <p class="text-xs text-ink-500 mt-1">
+          Akses riwayat konsultasi dan perhitungan waris Anda
+        </p>
+      </div>
 
-      <form class="mt-6 space-y-3" @submit.prevent="masuk">
-        <input
-          v-model="email"
-          type="email"
-          placeholder="Email"
-          autocomplete="email"
-          class="w-full h-12 px-5 rounded-lg bg-white/70 border border-waris-900/20 outline-none text-sm focus:ring-2 focus:ring-waris-900/30 placeholder:text-ink/35"
-        />
-
-        <!-- Password + tombol lihat/sembunyikan -->
-        <div class="relative">
+      <form class="space-y-4" @submit.prevent="masuk">
+        <div>
+          <label for="loginEmail" class="block text-xs font-bold uppercase tracking-wider text-ink-700 mb-1.5">
+            Email
+          </label>
           <input
-            v-model="password"
-            :type="lihatSandi ? 'text' : 'password'"
-            placeholder="Password"
-            autocomplete="current-password"
-            class="w-full h-12 pl-5 pr-14 rounded-lg bg-white/70 border border-waris-900/20 outline-none text-sm focus:ring-2 focus:ring-waris-900/30 placeholder:text-ink/35"
+            id="loginEmail"
+            v-model="email"
+            type="email"
+            placeholder="nama@email.com"
+            autocomplete="email"
+            class="w-full h-11 px-4 rounded-xl border border-forest-900/15 bg-canvas outline-none text-xs text-ink-900 focus:border-forest-800 focus:ring-2 focus:ring-forest-800/20 transition-all placeholder:text-ink-400"
           />
-          <button
-            type="button"
-            class="absolute right-1.5 top-1/2 -translate-y-1/2 w-10 h-10 grid place-items-center rounded-lg text-ink/45 hover:text-waris-900 hover:bg-waris-900/10 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-900/30"
-            :aria-label="lihatSandi ? 'Sembunyikan password' : 'Tampilkan password'"
-            :aria-pressed="lihatSandi"
-            :title="lihatSandi ? 'Sembunyikan password' : 'Tampilkan password'"
-            @click="lihatSandi = !lihatSandi"
-          >
-            <i :class="lihatSandi ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
-          </button>
         </div>
 
-        <p v-if="galat" class="text-xs font-bold text-danger bg-danger-soft border border-danger/25 rounded-lg px-4 py-3">
-          <i class="fa-solid fa-circle-exclamation mr-2"></i>{{ galat }}
+        <div>
+          <label for="loginPassword" class="block text-xs font-bold uppercase tracking-wider text-ink-700 mb-1.5">
+            Password
+          </label>
+          <div class="relative">
+            <input
+              id="loginPassword"
+              v-model="password"
+              :type="lihatSandi ? 'text' : 'password'"
+              placeholder="Masukkan password Anda"
+              autocomplete="current-password"
+              class="w-full h-11 pl-4 pr-11 rounded-xl border border-forest-900/15 bg-canvas outline-none text-xs text-ink-900 focus:border-forest-800 focus:ring-2 focus:ring-forest-800/20 transition-all placeholder:text-ink-400"
+            />
+            <button
+              type="button"
+              class="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 grid place-items-center text-ink-500 hover:text-forest-900 transition-colors"
+              :aria-label="lihatSandi ? 'Sembunyikan password' : 'Lihat password'"
+              @click="lihatSandi = !lihatSandi"
+            >
+              <i :class="lihatSandi ? 'fa-solid fa-eye-slash text-xs' : 'fa-solid fa-eye text-xs'"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Error notification -->
+        <p
+          v-if="galat"
+          class="text-xs font-bold text-danger-DEFAULT bg-danger-soft border border-danger-DEFAULT/20 rounded-xl px-4 py-2.5 flex items-center gap-2"
+        >
+          <i class="fa-solid fa-circle-exclamation shrink-0"></i>
+          <span>{{ galat }}</span>
         </p>
+
         <button
           type="submit"
           :disabled="sibuk"
-          class="w-full h-12 rounded-lg bg-waris-900 text-white text-sm font-extrabold shadow-soft transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-wait"
+          class="w-full h-11 rounded-xl bg-forest-900 text-white text-xs font-bold shadow-subtle hover:bg-forest-800 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          <i v-if="sibuk" class="fa-solid fa-circle-notch fa-spin mr-2"></i>
-          {{ sibuk ? 'Memeriksa…' : 'Masuk' }}
+          <i v-if="sibuk" class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+          <span>{{ sibuk ? 'Memverifikasi…' : 'Masuk Sekarang' }}</span>
         </button>
       </form>
 
-      <p class="text-xs text-ink/55 font-semibold text-center mt-4">
-        Belum punya akun?
-        <RouterLink to="/daftar" class="text-waris-900 font-extrabold hover:underline">Daftar gratis</RouterLink>
-      </p>
+      <div class="mt-6 pt-4 border-t border-forest-900/10 text-center">
+        <p class="text-xs text-ink-600">
+          Belum memiliki akun?
+          <RouterLink to="/daftar" class="text-forest-900 font-bold hover:underline ml-1">
+            Daftar gratis di sini
+          </RouterLink>
+        </p>
+      </div>
     </div>
   </div>
 </template>

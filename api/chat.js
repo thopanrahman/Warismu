@@ -2,7 +2,7 @@
 //
 // Alur:
 //   pesan user
-//     -> LLM (llmRouter: Gemini -> DeepSeek -> OpenAI): ekstraksi fakta -> JSON
+//     -> LLM (llmRouter: Gemini -> DeepSeek -> OpenAI -> NVIDIA): ekstraksi fakta -> JSON
 //     -> mesin hitung faraid lokal: hitung pembagian secara deterministik
 //     -> LLM (llmRouter, urutan fallback sama): susun penjelasan naratif
 //     -> response dengan kontrak lama agar frontend tidak berubah
@@ -13,7 +13,9 @@ import { hitungFaraid } from './lib/faraidh.js'
 import {
   DISCLAIMER_DEFAULT,
   ekstrakData,
+  jawabQnA,
   jelaskanHasil,
+  mockQnAResponse,
   mockResponse,
   SUMBER_DEFAULT,
 } from './lib/llmRouter.js'
@@ -77,6 +79,42 @@ function daftarTeks(nilai, maksimal = 3) {
 function labelAhliWaris(nama) {
   if (LABEL_AHLI_WARIS[nama]) return LABEL_AHLI_WARIS[nama]
   return String(nama ?? 'Ahli waris').replaceAll('_', ' ')
+}
+
+function deteksiPertanyaanEdukasi(teks) {
+  const t = String(teks || '').toLowerCase()
+  const kataKunci = [
+    'apa itu',
+    'jelaskan',
+    'beda',
+    'perbedaan',
+    'apa yang dimaksud',
+    'maksud dari',
+    'pengertian',
+    'definisi',
+    'bagaimana hukum',
+    'hukum waris',
+    'siapa saja ahli',
+    'siapa yang berhak',
+    'mengapa',
+    'kenapa',
+    'apa arti',
+    'apa maksud',
+    'bagaimana cara',
+    'rukun waris',
+    'syarat waris',
+    'dzawil furudh',
+    'ashabah',
+    'hijab',
+    'mahjub',
+    'aul',
+    'radd',
+    'gharrawain',
+    'musytarakah',
+    'munasakhat',
+    'kalalah',
+  ]
+  return kataKunci.some((k) => t.includes(k))
 }
 
 function normalisasiEkstraksi(data = {}) {
@@ -229,7 +267,48 @@ export default async function handler(req, res) {
   const riwayatAman = Array.isArray(riwayat) ? riwayat.slice(-10) : []
 
   try {
-    // 1. Ekstraksi fakta oleh LLM (Gemini -> DeepSeek -> OpenAI). Tidak ada perhitungan faraid di sini.
+    // 0. Deteksi Intent Q&A Fikih (UC-11):
+    // Jika pesan terdeteksi sebagai pertanyaan edukasi ATAU sesi sudah selesai,
+    // panggil prompt Q&A khusus tanpa memaksa user memasukkan data waris baru.
+    const isEdukasi = deteksiPertanyaanEdukasi(teksPesan)
+    const isSelesai = Boolean(
+      req.body?.selesai === true ||
+      req.body?.sesi_selesai === true ||
+      riwayatAman.some((r) => r?.selesai === true || r?.hasil) ||
+      riwayatAman.some(
+        (r) =>
+          r?.peran === 'bot' &&
+          (r?.teks?.includes('Simulasi Pembagian Waris') ||
+            r?.teks?.includes('Perhitungan faraid') ||
+            r?.teks?.includes('Tirkah bersih')),
+      ),
+    )
+
+    if (isEdukasi || isSelesai) {
+      console.log(`[Chat] Menjalankan alur Q&A fikih (isEdukasi: ${isEdukasi}, isSelesai: ${isSelesai})`)
+      const qna = await jawabQnA(teksPesan, riwayatAman)
+      if (!qna.ok) {
+        console.error('[Chat] Q&A LLM gagal:', qna.code, qna.error)
+        return res
+          .status(200)
+          .json(mockQnAResponse(teksPesan, `${qna.code}: ${qna.error}`))
+      }
+
+      const dataQna = qna.data || {}
+      return res.status(200).json({
+        balas: dataQna.balas || 'Berikut penjelasan fikih terkait pertanyaan Anda.',
+        tanya_lanjutan: daftarTeks(dataQna.tanya_lanjutan, 3),
+        hasil: null,
+        sumber: dataQna.sumber || SUMBER_DEFAULT,
+        disclaimer: dataQna.disclaimer || DISCLAIMER_DEFAULT,
+        selesai: isSelesai,
+        dipakaiMock: false,
+        mode: 'qna',
+        penyedia: qna.provider,
+      })
+    }
+
+    // 1. Ekstraksi fakta oleh LLM (Gemini -> DeepSeek -> OpenAI -> NVIDIA). Tidak ada perhitungan faraid di sini.
     const ekstraksi = await ekstrakData(teksPesan, riwayatAman)
     if (!ekstraksi.ok) {
       console.error('[Chat] Ekstraksi LLM gagal:', ekstraksi.code, ekstraksi.error)

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { onBeforeRouteLeave, RouterLink } from 'vue-router'
 import ChatBubble from '../components/ChatBubble.vue'
 import ChatSidebar from '../components/ChatSidebar.vue'
 import PanelIcon from '../components/PanelIcon.vue'
@@ -8,30 +8,22 @@ import BrandLogo from '../components/BrandLogo.vue'
 import { ambilPengguna, keluarAkun, panggilApi } from '../lib/akun.js'
 
 // ============ STATE ============
-// Mulai kosongan ala DeepSeek/ChatGPT: tidak ada sapaan bot, tidak ada mock.
-// Refresh = kembali ke tampilan awal (permintaan Desweb).
 const pesanBaru = ref('')
 const sedangMengetik = ref(false)
 const galatApi = ref('')
 const teksGagal = ref('')
 const konfirmasiHapus = ref(false)
-// Sidebar awalnya TERTUTUP di semua ukuran layar. Halaman chat dibuka dengan
-// kolom percakapan bersih; user sendiri yang memilih membuka sidebar riwayat.
 const sidebarTerbuka = ref(false)
 const kataKunci = ref('')
 const areaPesan = ref(null)
+const inputRef = ref(null)
 let idCounter = Date.now()
 
-// ===== Status akun =====
-// Token & profil disimpan src/lib/akun.js saat Daftar/Masuk. Tamu tetap boleh
-// berkonsultasi, tapi percakapannya TIDAK disimpan ke server: tidak masuk daftar
-// riwayat, dan hilang saat halaman dimuat ulang.
+// Status akun
 const pengguna = ref(ambilPengguna())
 const sudahMasuk = computed(() => !!pengguna.value)
 
-// ===== Riwayat konsultasi (Supabase, bukan localStorage) =====
-// Daftar sesi + isi percakapannya diambil dari GET /api/riwayat. Isi pesan
-// disimpan di memori agar pencarian di sidebar dan buka-sesi terasa instan.
+// Riwayat konsultasi
 const daftarRiwayat = reactive([])
 const sesiAktifId = ref(null)
 const judulSesiAktif = ref('')
@@ -39,8 +31,6 @@ const sesiTersimpan = reactive({})
 const memuatRiwayat = ref(false)
 const galatRiwayat = ref('')
 
-// Field yang ikut dikirim ke server — jangan kirim id internal atau properti
-// tampilan (itu bukan data konsultasi).
 function ringkasPesan(p) {
   return {
     peran: p.peran,
@@ -53,7 +43,6 @@ function ringkasPesan(p) {
   }
 }
 
-// Token kedaluwarsa / tidak sah → kembali ke mode tamu, bukan layar error.
 function sesiHabis() {
   keluarAkun()
   pengguna.value = null
@@ -77,16 +66,12 @@ async function muatRiwayatServer() {
       daftarRiwayat.push({ id: s.id, judul: s.judul, waktu: s.waktu, jumlah: s.jumlah ?? 0 })
     }
   } catch {
-    galatRiwayat.value = 'Riwayat tidak bisa dimuat dari server. Periksa koneksi.'
+    galatRiwayat.value = 'Riwayat belum bisa dimuat dari server.'
   } finally {
     memuatRiwayat.value = false
   }
 }
 
-// Simpan seluruh percakapan aktif. Dipanggil setiap ada pesan baru, jadi sesi
-// pertama otomatis dibuat di server dan ID-nya dipakai untuk pembaruan berikutnya.
-// Permintaan disimpan berurutan (antrean) supaya pesan pertama tidak sempat
-// membuat dua sesi gara-gara dua penyimpanan berjalan bersamaan.
 let antreanSimpan = Promise.resolve()
 function simpanSesiAktif() {
   antreanSimpan = antreanSimpan.then(simpanSesiSekarang).catch(() => {})
@@ -95,7 +80,7 @@ function simpanSesiAktif() {
 
 async function simpanSesiSekarang() {
   if (!sudahMasuk.value || !daftarPesan.length) return
-  const judul = judulSesiAktif.value || potongJudul(daftarPesan[0]?.teks || 'Konsultasi')
+  const judul = judulSesiAktif.value || potongJudul(daftarPesan[0]?.teks || 'Konsultasi Waris')
   try {
     const { ok, status, data } = await panggilApi('/api/riwayat', {
       method: 'POST',
@@ -122,11 +107,10 @@ async function simpanSesiSekarang() {
     sesiTersimpan[sesiAktifId.value] = daftarPesan.map(ringkasPesan)
     galatRiwayat.value = ''
   } catch {
-    galatRiwayat.value = 'Riwayat belum tersimpan ke server. Periksa koneksi.'
+    galatRiwayat.value = 'Riwayat belum tersimpan ke server.'
   }
 }
 
-// Menutup sesi (UC-13): tandai 'selesai' beserta waktu berakhirnya.
 function akhiriSesi() {
   const id = sesiAktifId.value
   if (!sudahMasuk.value || !id) return
@@ -136,14 +120,10 @@ function akhiriSesi() {
   }).catch(() => {})
 }
 
-// Percakapan aktif: selalu mulai kosong. Sengaja TIDAK dipulihkan saat refresh.
 const daftarPesan = reactive([])
-
 const belumMulai = computed(() => daftarPesan.length === 0)
-// Tombol kirim mati saat pesan kosong ATAU saat AI masih membalas (anti-spam klik).
 const kirimNonaktif = computed(() => sedangMengetik.value || !pesanBaru.value.trim())
 
-// ============ PENCARIAN SESI (judul + isi percakapan) ============
 function cuplikanSekitar(teks, kunci) {
   const bersih = String(teks || '').replace(/\s+/g, ' ').trim()
   const pos = bersih.toLowerCase().indexOf(kunci)
@@ -156,7 +136,6 @@ function cuplikanSekitar(teks, kunci) {
   )
 }
 
-// Daftar yang ditampilkan di sidebar: hanya sesi yang cocok, urutan tetap terbaru.
 const riwayatTampil = computed(() => {
   const kunci = kataKunci.value.trim().toLowerCase()
   if (!kunci) return daftarRiwayat.map((r) => ({ ...r, cuplikan: '' }))
@@ -172,52 +151,64 @@ const riwayatTampil = computed(() => {
     .filter(Boolean)
 })
 
-// ============ SERVER TIDAK TERJANGKAU ============
-// Tidak ada balasan tiruan. Kalau /api/chat tidak bisa dijangkau, user hanya
-// diberi tahu bahwa koneksi terputus — bukan disodori angka waris karangan.
-const PESAN_SERVER_PUTUS =
-  'Koneksi ke server terputus. Silakan periksa internet Anda dan coba lagi.'
+const PESAN_SERVER_PUTUS = 'Koneksi ke server terputus. Silakan periksa internet Anda dan coba lagi.'
 
 function potongJudul(teks) {
   const bersih = teks.replace(/\s+/g, ' ').trim()
   return bersih.length > 38 ? bersih.slice(0, 38) + '…' : bersih
 }
 
-function ringkasRiwayat() {
-  return daftarPesan.slice(-10).map((p) => ({ peran: p.peran, teks: p.teks }))
+function simpanMigrasiChat() {
+  if (!sudahMasuk.value && daftarPesan.length > 0) {
+    try {
+      sessionStorage.setItem('migrasi_chat', JSON.stringify(daftarPesan.map(ringkasPesan)))
+    } catch (e) {
+      console.warn('[Migrasi] Gagal menyimpan migrasi_chat:', e)
+    }
+  }
 }
 
-// Server sengaja membalas HTTP 200 walau mesin AI atau mesin hitung gagal
-// (agar demo tidak menampilkan layar error). Konsekuensinya user harus
-// diberi tahu bahwa balasan itu mock, bukan hasil Gemini/Faraidh sungguhan.
+onBeforeRouteLeave((to) => {
+  if (!sudahMasuk.value && (to.path === '/daftar' || to.path === '/masuk') && daftarPesan.length > 0) {
+    simpanMigrasiChat()
+  }
+})
+
+function ringkasRiwayat() {
+  return daftarPesan.slice(-10).map((p) => ({
+    peran: p.peran,
+    teks: p.teks,
+    hasil: p.hasil ?? null,
+    selesai: Boolean(p.hasil),
+  }))
+}
+
 function pesanMockServer(alasan) {
   if (alasan === 'mesin-hitung') {
-    return (
-      'Data keluarga sudah tercatat, tetapi mesin hitung faraid di server sedang tidak aktif, ' +
-      'jadi angka pembagian belum bisa ditampilkan. Coba lagi beberapa saat lagi.'
-    )
+    return 'Data keluarga sudah tercatat, namun mesin hitung di server sedang dalam pemeliharaan. Coba beberapa saat lagi.'
   }
-  return (
-    'Balasan ini dibuat tanpa AI (mode mock), jadi ceritamu belum benar-benar diproses. ' +
-    'Periksa konfigurasi GEMINI_API_KEY di server, lalu tekan Coba lagi.'
-  )
+  return 'Balasan ini dibuat dalam mode cadangan offline (simulasi edukasi).'
 }
 
-// Minta jawaban asisten untuk satu pesan pengguna (dipakai kirim & coba ulang).
 async function mintaJawaban(isi) {
   galatApi.value = ''
   teksGagal.value = ''
   sedangMengetik.value = true
   gulirBawah()
   try {
+    const sudahAdaHasil = daftarPesan.some((p) => Boolean(p.hasil))
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pesan: isi, riwayat: ringkasRiwayat() }),
+      body: JSON.stringify({
+        pesan: isi,
+        riwayat: ringkasRiwayat(),
+        selesai: sudahAdaHasil,
+      }),
     })
     if (!res.ok) throw new Error('HTTP ' + res.status)
     const data = await res.json()
-    let teks = data.balas || 'Maaf, saya tidak mendapat jawaban. Coba ulangi.'
+    let teks = data.balas || 'Maaf, saya tidak mendapat jawaban. Silakan ulangi.'
     if (data.tanya_lanjutan?.length && !data.selesai) {
       teks += '\n\n' + data.tanya_lanjutan.map((t, i) => `${i + 1}. ${t}`).join('\n')
     }
@@ -237,9 +228,6 @@ async function mintaJawaban(isi) {
       teksGagal.value = isi
     }
   } catch {
-    // DESIGN.md §4.2 — state Error: pesan error dengan border merah.
-    // Sengaja TIDAK membuat balasan tiruan: user hanya diberi tahu koneksi
-    // terputus, lalu bisa menekan "Coba lagi".
     galatApi.value = PESAN_SERVER_PUTUS
     teksGagal.value = isi
   } finally {
@@ -251,14 +239,8 @@ async function mintaJawaban(isi) {
 
 async function kirimPesan(teksLangsung = '') {
   const isi = (teksLangsung || pesanBaru.value).trim()
-  // Validasi: tolak pesan kosong / hanya berisi spasi.
-  if (!isi) return
-  // Anti-spam: jangan kirim pesan baru selama AI masih membalas.
-  if (sedangMengetik.value) return
+  if (!isi || sedangMengetik.value) return
 
-  // Pesan pertama (hanya untuk user yang sudah masuk) = sesi baru di server.
-  // ID sesi diisi dari balikan POST /api/riwayat saat pesan pertama disimpan.
-  // Tamu: percakapan tetap jalan, riwayat tidak dicatat.
   if (belumMulai.value && sudahMasuk.value) {
     sesiAktifId.value = null
     judulSesiAktif.value = potongJudul(isi)
@@ -270,13 +252,9 @@ async function kirimPesan(teksLangsung = '') {
   autoResize()
   gulirBawah()
   simpanSesiAktif()
-
-  // Kirim ke backend sungguhan (UC-07/08/09 via Gemini). Bila gagal dijangkau,
-  // user diberi pesan koneksi terputus — tanpa balasan tiruan.
   await mintaJawaban(isi)
 }
 
-// Kirim ulang pesan terakhir yang gagal (buang balasan mock agar tidak dobel).
 function cobaUlang() {
   if (!teksGagal.value || sedangMengetik.value) return
   const terakhir = daftarPesan[daftarPesan.length - 1]
@@ -284,9 +262,6 @@ function cobaUlang() {
   mintaJawaban(teksGagal.value)
 }
 
-// FR-19 / UC-14: laporan jawaban AI dicatat ke tabel reports, bukan cuma
-// penanda di layar. Tamu tidak punya akun di server, jadi laporan hanya
-// ditandai di layar (tidak ada yang bisa dihubungkan ke akun).
 async function laporkan(id) {
   const b = daftarPesan.find((p) => p.id === id)
   if (!b) return
@@ -308,26 +283,22 @@ async function laporkan(id) {
   simpanSesiAktif()
 }
 
-// ============ INTERAKSI UI ============
 function gulirBawah() {
   nextTick(() => {
     if (areaPesan.value) areaPesan.value.scrollTop = areaPesan.value.scrollHeight
   })
 }
 
-const inputRef = ref(null)
 function autoResize() {
   nextTick(() => {
     const el = inputRef.value
     if (!el) return
     el.style.height = 'auto'
-    const maks = 4 * 24 + 24 // ±4 baris
+    const maks = 4 * 24 + 24
     el.style.height = Math.min(el.scrollHeight, maks) + 'px'
   })
 }
 
-// Enter = kirim. Shift+Enter tetap baris baru karena handler memakai modifier .exact.
-// Escape: tutup dialog konfirmasi, lalu drawer sidebar (hanya di layar kecil).
 function saatEscape(e) {
   if (e.key !== 'Escape') return
   if (konfirmasiHapus.value) {
@@ -337,22 +308,56 @@ function saatEscape(e) {
   const layarKecil = window.matchMedia('(max-width: 767px)').matches
   if (layarKecil && sidebarTerbuka.value) sidebarTerbuka.value = false
 }
+
+// Starter conversation cards
+const starterCards = [
+  {
+    judul: 'Keluarga Inti dengan Harta',
+    teks: 'Ayah wafat meninggalkan ibu, istri, 2 anak laki-laki dan 1 perempuan. Total harta 150 juta rupiah.',
+  },
+  {
+    judul: 'Hak Waris Istri Tanpa Anak',
+    teks: 'Berapa bagian waris istri jika almarhum suami tidak meninggalkan anak maupun cucu?',
+  },
+  {
+    judul: 'Kedudukan Anak Angkat',
+    teks: 'Apakah anak angkat berhak mendapatkan warisan dalam hukum faraid Islam?',
+  },
+  {
+    judul: 'Kewajiban Sebelum Pembagian',
+    teks: 'Apa saja kewajiban yang wajib ditunaikan sebelum harta peninggalan dibagi kepada ahli waris?',
+  },
+]
+
+function pilihStarter(teks) {
+  pesanBaru.value = teks
+  autoResize()
+  kirimPesan()
+}
+
 onMounted(() => {
   window.addEventListener('keydown', saatEscape)
-  // Riwayat diambil dari server saat halaman dibuka (UC-04). Percakapan aktif
-  // tetap mulai kosong: refresh tidak memulihkan sesi yang sedang berjalan.
   muatRiwayatServer()
+
+  // Periksa apakah ada prefill konsultasi dari kalkulator
+  try {
+    const prefill = sessionStorage.getItem('konsultasi_prefill')
+    if (prefill) {
+      pesanBaru.value = prefill
+      sessionStorage.removeItem('konsultasi_prefill')
+      autoResize()
+    }
+  } catch (e) {
+    console.error(e)
+  }
 })
+
 onUnmounted(() => window.removeEventListener('keydown', saatEscape))
 
-// Di layar kecil sidebar berperan sebagai drawer, jadi wajar ditutup setelah aksi.
-// Di desktop dibiarkan terbuka agar daftar riwayat tetap terlihat.
 function tutupDrawerKecil() {
   if (window.matchMedia('(max-width: 767px)').matches) sidebarTerbuka.value = false
 }
 
-// Menutup sidebar TIDAK menghapus sesi / pesan / kata kunci pencarian.
-// Sesi yang ditinggalkan ditandai selesai di server (UC-13).
 function sesiBaru(tutupSesi = true) {
   if (tutupSesi) akhiriSesi()
   daftarPesan.splice(0)
@@ -379,14 +384,12 @@ function pilihRiwayat(r) {
     daftarPesan.push({
       id: ++idCounter,
       peran: 'bot',
-      teks: `Sesi "${r.judul}" tersimpan di akunmu, tetapi isi percakapannya belum terekam.`,
+      teks: `Sesi "${r.judul}" tersimpan di akunmu.`,
     })
   }
   gulirBawah()
 }
 
-// Tombol "Hapus riwayat" → konfirmasi dulu (Batal / Hapus semua), lalu
-// DELETE /api/riwayat menghapus seluruh sesi akun ini di server (UC-15).
 async function hapusSemua() {
   konfirmasiHapus.value = false
   if (!sudahMasuk.value) {
@@ -410,9 +413,10 @@ async function hapusSemua() {
 
 <template>
   <div
-    class="h-[calc(100vh-6.5rem)] md:h-[calc(100vh-6rem)] flex px-4 sm:px-6 pb-4 max-w-7xl mx-auto w-full"
+    class="h-[calc(100vh-5.5rem)] flex px-3 sm:px-6 pb-4 max-w-7xl mx-auto w-full transition-all"
     :class="sidebarTerbuka ? 'gap-4' : 'gap-0'"
   >
+    <!-- Sidebar Riwayat -->
     <ChatSidebar
       :riwayat="riwayatTampil"
       :total="daftarRiwayat.length"
@@ -426,160 +430,215 @@ async function hapusSemua() {
       @cari="kataKunci = $event"
     />
 
-    <!-- Area chat utama (DESIGN.md §4.2: background cream) -->
+    <!-- Area Chat Utama -->
     <section
-      class="flex-1 min-w-0 flex flex-col bg-cream border border-waris-900/10 rounded-2xl shadow-soft overflow-hidden"
+      class="flex-1 min-w-0 flex flex-col bg-canvas border border-forest-900/10 rounded-2xl shadow-card overflow-hidden"
     >
-      <!-- Header chat -->
-      <div class="flex items-center gap-3 px-4 sm:px-6 py-4 border-b border-waris-900/10">
+      <!-- Chat Header -->
+      <div class="flex items-center gap-3 px-4 sm:px-6 py-3.5 bg-white border-b border-forest-900/10">
         <button
           type="button"
           :title="sidebarTerbuka ? 'Tutup sidebar riwayat' : 'Buka sidebar riwayat'"
-          :aria-label="sidebarTerbuka ? 'Tutup sidebar riwayat' : 'Buka sidebar riwayat'"
-          aria-controls="sidebar-riwayat"
-          :aria-expanded="sidebarTerbuka ? 'true' : 'false'"
-          class="w-11 h-11 shrink-0 grid place-items-center rounded-full text-waris-900 border border-waris-900/20 hover:bg-waris-900/10 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-900/40 transition-all duration-200"
+          aria-label="Toggle sidebar riwayat"
+          class="w-10 h-10 shrink-0 grid place-items-center rounded-xl text-forest-900 border border-forest-900/15 hover:bg-forest-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-900/30 transition-all"
           @click="sidebarTerbuka = !sidebarTerbuka"
         >
           <PanelIcon :arah="sidebarTerbuka ? 'kiri' : 'kanan'" />
         </button>
-        <BrandLogo class="w-10 h-10" />
+
+        <BrandLogo class="w-8 h-8 sm:w-9 sm:h-9" />
+
         <div class="min-w-0">
-          <p class="font-display font-bold leading-tight truncate">Konsultasi Waris</p>
+          <p class="font-display font-bold leading-tight truncate text-forest-950 text-sm sm:text-base">
+            Konsultasi Waris AI
+          </p>
           <p
             v-if="sedangMengetik"
-            class="text-xs font-bold flex items-center gap-2 text-waris-700"
+            class="text-xs font-semibold flex items-center gap-1.5 text-forest-700"
             role="status"
           >
-            <span class="w-2 h-2 rounded-full bg-waris-600 animate-pulse"></span>
+            <span class="w-2 h-2 rounded-full bg-forest-600 animate-pulse"></span>
             WarisMu sedang menyiapkan jawaban…
           </p>
-          <p v-else-if="memuatRiwayat" class="text-xs font-semibold text-ink/45" role="status">
-            Memuat riwayat…
+          <p v-else class="text-[11px] text-ink-500 font-medium">
+            Percakapan Berdasar Syariat Faraid
           </p>
         </div>
-        <button
-          type="button"
-          class="ml-auto h-10 px-4 rounded-full border border-waris-800 text-waris-800 text-xs font-extrabold hover:bg-waris-900/5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-900/30 transition-all duration-200"
-          @click="sesiBaru()"
-        >
-          <i class="fa-solid fa-plus mr-2"></i><span class="hidden sm:inline">Sesi Baru</span>
-        </button>
+
+        <!-- Tombol Aksi Header: Sesi Baru & Buka Kalkulator -->
+        <div class="ml-auto flex items-center gap-2">
+          <RouterLink
+            to="/kalkulator"
+            class="hidden sm:inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-forest-900/15 text-forest-900 text-xs font-bold hover:bg-forest-50 transition-colors"
+          >
+            <i class="fa-solid fa-calculator text-xs"></i>
+            <span>Form Kalkulator</span>
+          </RouterLink>
+
+          <button
+            type="button"
+            class="h-9 px-3.5 rounded-xl bg-forest-900 text-white text-xs font-bold hover:bg-forest-800 active:scale-95 transition-all shadow-subtle flex items-center gap-1.5"
+            @click="sesiBaru()"
+          >
+            <i class="fa-solid fa-plus text-xs"></i>
+            <span class="hidden sm:inline">Sesi Baru</span>
+          </button>
+        </div>
       </div>
 
-      <!-- State ERROR (DESIGN.md §4.2): border merah + opsi coba lagi -->
+      <!-- State ERROR / Notifikasi Server -->
       <div
         v-if="galatApi"
-        class="mx-4 sm:mx-6 mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-danger bg-danger-soft px-4 py-3 text-xs font-bold text-danger"
+        class="mx-4 sm:mx-6 mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-danger-DEFAULT/30 bg-danger-soft px-4 py-2.5 text-xs font-bold text-danger-DEFAULT"
         role="alert"
       >
-        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        <i class="fa-solid fa-triangle-exclamation"></i>
         <span class="flex-1 min-w-[12rem]">{{ galatApi }}</span>
         <button
           v-if="teksGagal"
           type="button"
-          class="h-9 px-4 rounded-full bg-danger text-white font-extrabold hover:opacity-90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40 transition-all duration-200"
+          class="h-8 px-3.5 rounded-lg bg-danger-DEFAULT text-white font-bold hover:opacity-90 active:scale-95 transition-all"
           @click="cobaUlang"
         >
-          <i class="fa-solid fa-rotate-right mr-2"></i>Coba lagi
+          <i class="fa-solid fa-rotate-right mr-1.5 text-xs"></i>Coba Lagi
         </button>
       </div>
 
-      <!-- State riwayat: gagal simpan/muat/hapus di server (tidak fatal) -->
-      <div
-        v-if="galatRiwayat"
-        class="mx-4 sm:mx-6 mt-4 flex items-center gap-3 rounded-xl border border-waris-900/20 bg-waris-100 px-4 py-3 text-xs font-bold text-waris-900"
-        role="status"
-      >
-        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-        <span>{{ galatRiwayat }}</span>
-      </div>
-
-      <!-- TAMPILAN AWAL KOSONG: sapaan + input di tengah -->
+      <!-- EMPTY STATE: Sapaan Tenang + 4 Starter Cards + Input di Tengah -->
       <div
         v-if="belumMulai && !sedangMengetik"
-        class="flex-1 overflow-y-auto flex flex-col items-center justify-center text-center px-6 py-8"
+        class="flex-1 overflow-y-auto flex flex-col items-center justify-center px-4 sm:px-6 py-8 max-w-3xl mx-auto w-full text-center"
       >
-        <BrandLogo class="w-16 h-16 mb-4" />
-        <h2 class="font-display font-bold text-xl sm:text-2xl leading-snug max-w-xl">
-          Assalamualaikum, semoga kondisimu baik-baik saja. Ada yang bisa WarisMu bantu?
+        <BrandLogo class="w-14 h-14 mb-4" />
+        <h2 class="font-display font-bold text-2xl sm:text-3xl text-forest-950 leading-tight">
+          Assalamualaikum. Ada yang bisa WarisMu bantu seputar pembagian waris?
         </h2>
-
-
-        <!-- Tamu: beri tahu sejak awal bahwa riwayat tidak disimpan -->
-        <p
-          v-if="!sudahMasuk"
-          class="mt-4 inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full bg-waris-100 border border-waris-800/20 px-4 py-2 text-xs font-bold text-waris-800"
-        >
-          <i class="fa-solid fa-user-clock" aria-hidden="true"></i>
-          <span>Mode tamu — riwayat tidak disimpan.</span>
-          <RouterLink to="/daftar" class="underline hover:text-waris-900">Daftar akun</RouterLink>
+        <p class="text-sm text-ink-600 mt-2 max-w-lg leading-relaxed">
+          Ceritakan kondisi keluarga Anda secara bebas dalam bahasa sehari-hari, atau pilih salah satu contoh pertanyaan di bawah ini.
         </p>
 
-        <div class="w-full max-w-2xl mt-6">
+        <!-- Mode Tamu Indicator -->
+        <div
+          v-if="!sudahMasuk"
+          class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-forest-50 border border-forest-900/10 text-xs font-semibold text-forest-800"
+        >
+          <i class="fa-solid fa-user-clock text-xs"></i>
+          <span>Mode Tamu (riwayat tidak disimpan).</span>
+          <RouterLink to="/daftar" class="underline font-bold text-forest-900" @click="simpanMigrasiChat">
+            Daftar akun gratis &rarr;
+          </RouterLink>
+        </div>
+
+        <!-- 4 Starter Scenario Cards -->
+        <div class="grid sm:grid-cols-2 gap-3 mt-8 w-full text-left">
+          <button
+            v-for="s in starterCards"
+            :key="s.judul"
+            type="button"
+            class="p-4 rounded-xl border border-forest-900/10 bg-white hover:bg-forest-50/70 hover:border-forest-900/25 transition-all duration-200 active:scale-[0.98] shadow-subtle group"
+            @click="pilihStarter(s.teks)"
+          >
+            <p class="font-bold text-xs text-forest-900 group-hover:text-forest-700 flex items-center justify-between">
+              <span>{{ s.judul }}</span>
+              <i class="fa-solid fa-arrow-right text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </p>
+            <p class="text-xs text-ink-600 mt-1 line-clamp-2 leading-relaxed">
+              {{ s.teks }}
+            </p>
+          </button>
+        </div>
+
+        <!-- Central Input Area -->
+        <div class="w-full mt-6">
           <div
-            class="flex items-end gap-2 bg-white/70 border border-waris-900/20 rounded-2xl p-2 pl-5 shadow-soft focus-within:ring-2 focus-within:ring-waris-900/30 transition-all"
+            class="flex items-end gap-2 bg-white border border-forest-900/20 rounded-2xl p-2 pl-4 shadow-card focus-within:ring-2 focus-within:ring-forest-900/30 transition-all"
           >
             <textarea
               ref="inputRef"
               v-model="pesanBaru"
               rows="1"
-              placeholder="Ceritakan Warisan"
-              aria-label="Ceritakan kondisi keluarga untuk simulasi waris"
-              class="flex-1 min-w-0 bg-transparent resize-none outline-none text-sm py-3 max-h-32 placeholder:text-ink/35"
+              placeholder="Ceritakan kondisi keluarga atau tanyakan hukum waris…"
+              class="flex-1 min-w-0 bg-transparent resize-none outline-none text-sm py-2.5 max-h-32 text-ink-900 placeholder:text-ink-400"
               @input="autoResize"
               @keydown.enter.exact.prevent="kirimPesan()"
             ></textarea>
             <button
               type="button"
-              aria-label="Kirim pesan"
+              aria-label="Kirim pesan konsultasi"
               :disabled="kirimNonaktif"
-              class="w-12 h-12 shrink-0 rounded-full grid place-items-center text-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-900/40"
+              class="w-11 h-11 shrink-0 rounded-xl grid place-items-center text-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-900/40"
               :class="
                 kirimNonaktif
-                  ? 'bg-waris-900/25 opacity-50 cursor-not-allowed'
-                  : 'bg-waris-900 hover:scale-105 active:scale-95 shadow-soft'
+                  ? 'bg-forest-900/30 opacity-50 cursor-not-allowed'
+                  : 'bg-forest-900 hover:bg-forest-800 active:scale-95 shadow-subtle'
               "
               @click="kirimPesan()"
             >
-              <i class="fa-solid fa-arrow-up"></i>
+              <i class="fa-solid fa-arrow-up text-sm"></i>
             </button>
           </div>
-          <p class="text-xs text-ink/45 mt-3">
-            Enter untuk kirim • Shift+Enter untuk baris baru. Hasil simulasi bersifat edukatif —
-            tetap konsultasikan ke ahli faraid.
+          <p class="text-[11px] text-ink-500 mt-2.5">
+            Tekan Enter untuk kirim • Shift+Enter untuk baris baru.
           </p>
         </div>
       </div>
 
-      <!-- TAMPILAN CHAT AKTIF -->
+      <!-- ACTIVE CHAT VIEW -->
       <template v-else>
-        <!-- Daftar pesan + typing indicator -->
-        <div ref="areaPesan" class="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
+        <!-- Daftar Pesan Chat -->
+        <div ref="areaPesan" class="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4">
           <ChatBubble v-for="b in daftarPesan" :key="b.id" :bubble="b" @laporkan="laporkan" />
+
+          <!-- Typing indicator -->
           <div v-if="sedangMengetik" class="flex justify-start gap-3" role="status">
-            <BrandLogo class="w-9 h-9" />
-            <div class="bg-waris-50 text-ink rounded-xl rounded-tl-none px-5 py-4 flex gap-2 items-center shadow-soft">
-              <span class="w-2 h-2 rounded-full bg-waris-800 animate-bounce" style="animation-delay: 0ms"></span>
-              <span class="w-2 h-2 rounded-full bg-waris-800 animate-bounce" style="animation-delay: 150ms"></span>
-              <span class="w-2 h-2 rounded-full bg-waris-800 animate-bounce" style="animation-delay: 300ms"></span>
-              <span class="sr-only">WarisMu sedang menyiapkan jawaban</span>
+            <BrandLogo class="w-8 h-8 shrink-0 mt-1" />
+            <div class="bg-white border border-forest-900/10 rounded-2xl rounded-tl-sm px-5 py-3.5 shadow-card flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-forest-700 animate-bounce" style="animation-delay: 0ms"></span>
+              <span class="w-2 h-2 rounded-full bg-forest-700 animate-bounce" style="animation-delay: 150ms"></span>
+              <span class="w-2 h-2 rounded-full bg-forest-700 animate-bounce" style="animation-delay: 300ms"></span>
+              <span class="text-xs text-ink-500 font-medium ml-1">WarisMu sedang menelaah…</span>
             </div>
           </div>
         </div>
 
-        <!-- Input bawah -->
-        <div class="px-4 sm:px-6 pb-2 pt-1">
+        <!-- Banner Tamu saat chat berjalan -->
+        <div
+          v-if="!sudahMasuk"
+          class="mx-4 sm:mx-6 mb-2 py-2 px-3.5 rounded-xl bg-forest-50 border border-forest-900/10 flex flex-wrap items-center justify-between gap-2 text-xs text-forest-800"
+        >
+          <span class="inline-flex items-center gap-1.5 font-medium">
+            <i class="fa-solid fa-cloud-arrow-up text-forest-700"></i>
+            <span>Mode tamu: Masuk atau daftar agar konsultasi ini tersimpan ke riwayat akun.</span>
+          </span>
+          <div class="flex items-center gap-2 font-bold shrink-0">
+            <RouterLink
+              to="/masuk"
+              class="px-2.5 py-1 rounded bg-white hover:bg-forest-100 text-forest-900 border border-forest-900/15"
+              @click="simpanMigrasiChat"
+            >
+              Masuk
+            </RouterLink>
+            <RouterLink
+              to="/daftar"
+              class="px-2.5 py-1 rounded bg-forest-900 text-white hover:bg-forest-800"
+              @click="simpanMigrasiChat"
+            >
+              Daftar
+            </RouterLink>
+          </div>
+        </div>
+
+        <!-- Bottom Input Area -->
+        <div class="p-3 sm:p-4 bg-white border-t border-forest-900/10">
           <div
-            class="flex items-end gap-2 bg-white/70 border border-waris-900/20 rounded-2xl p-2 pl-5 shadow-soft focus-within:ring-2 focus-within:ring-waris-900/30 transition-all"
+            class="flex items-end gap-2 bg-canvas border border-forest-900/20 rounded-2xl p-2 pl-4 focus-within:ring-2 focus-within:ring-forest-900/30 transition-all"
           >
             <textarea
               ref="inputRef"
               v-model="pesanBaru"
               rows="1"
-              placeholder="Ceritakan Warisan"
-              aria-label="Tulis pesan untuk WarisMu"
-              class="flex-1 min-w-0 bg-transparent resize-none outline-none text-sm py-3 max-h-32 placeholder:text-ink/35"
+              placeholder="Ketik tanggapan atau pertanyaan lanjutan…"
+              class="flex-1 min-w-0 bg-transparent resize-none outline-none text-sm py-2 max-h-32 text-ink-900 placeholder:text-ink-400"
               @input="autoResize"
               @keydown.enter.exact.prevent="kirimPesan()"
             ></textarea>
@@ -587,58 +646,55 @@ async function hapusSemua() {
               type="button"
               aria-label="Kirim pesan"
               :disabled="kirimNonaktif"
-              class="w-12 h-12 shrink-0 rounded-full grid place-items-center text-white transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-900/40"
+              class="w-10 h-10 shrink-0 rounded-xl grid place-items-center text-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-900/40"
               :class="
                 kirimNonaktif
-                  ? 'bg-waris-900/25 opacity-50 cursor-not-allowed'
-                  : 'bg-waris-900 hover:scale-105 active:scale-95 shadow-soft'
+                  ? 'bg-forest-900/30 opacity-50 cursor-not-allowed'
+                  : 'bg-forest-900 hover:bg-forest-800 active:scale-95 shadow-subtle'
               "
               @click="kirimPesan()"
             >
-              <i class="fa-solid fa-arrow-up"></i>
+              <i class="fa-solid fa-arrow-up text-xs"></i>
             </button>
           </div>
         </div>
       </template>
     </section>
 
-    <!-- Dialog konfirmasi hapus riwayat -->
+    <!-- Dialog Konfirmasi Hapus Riwayat -->
     <transition name="modal">
       <div
         v-if="konfirmasiHapus"
-        class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-waris-950/60 backdrop-blur-sm"
+        class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-forest-950/70 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="judul-hapus"
         @click.self="konfirmasiHapus = false"
       >
-        <div
-          class="modal-card bg-cream rounded-2xl w-full max-w-md p-6 sm:p-8 shadow-float border border-waris-900/10"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="judul-hapus-riwayat"
-        >
-          <span class="w-14 h-14 rounded-full bg-danger-soft text-danger grid place-items-center text-2xl">
+        <div class="modal-card bg-white rounded-2xl w-full max-w-md p-6 sm:p-8 shadow-float border border-forest-900/10">
+          <span class="w-12 h-12 rounded-xl bg-danger-soft text-danger-DEFAULT grid place-items-center text-xl mb-4">
             <i class="fa-solid fa-trash-can"></i>
           </span>
-          <h3 id="judul-hapus-riwayat" class="font-display font-bold text-2xl mt-4 text-ink">
-            Hapus semua riwayat?
+          <h3 id="judul-hapus" class="font-display font-bold text-xl text-ink-900">
+            Hapus Semua Riwayat Percakapan?
           </h3>
-          <p class="text-sm text-ink/60 leading-relaxed mt-2">
-            {{ daftarRiwayat.length }} sesi percakapan beserta isinya akan dihapus dari akunmu.
-            Tindakan ini tidak bisa dibatalkan.
+          <p class="text-xs sm:text-sm text-ink-600 leading-relaxed mt-2">
+            Seluruh riwayat konsultasi yang tersimpan akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
           </p>
-          <div class="flex flex-wrap gap-3 mt-6">
+          <div class="flex items-center gap-3 mt-6">
             <button
               type="button"
-              class="h-12 flex-1 min-w-[8rem] rounded-full border border-waris-800 text-waris-800 text-sm font-extrabold hover:bg-waris-900/5 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-900/30 transition-all duration-200"
+              class="flex-1 py-2.5 rounded-xl border border-forest-900/20 text-ink-700 text-xs font-bold hover:bg-forest-50"
               @click="konfirmasiHapus = false"
             >
               Batal
             </button>
             <button
               type="button"
-              class="h-12 flex-1 min-w-[8rem] rounded-full bg-danger text-white text-sm font-extrabold hover:opacity-90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/40 transition-all duration-200"
+              class="flex-1 py-2.5 rounded-xl bg-danger-DEFAULT text-white text-xs font-bold hover:bg-danger-dark shadow-subtle"
               @click="hapusSemua"
             >
-              <i class="fa-solid fa-trash-can mr-2"></i>Hapus semua
+              Hapus Semua
             </button>
           </div>
         </div>

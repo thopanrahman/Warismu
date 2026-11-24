@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import HomePage from '../pages/HomePage.vue'
+import KalkulatorPage from '../pages/KalkulatorPage.vue'
 import ChatPage from '../pages/ChatPage.vue'
 import AboutPage from '../pages/AboutPage.vue'
 import PanduanPage from '../pages/PanduanPage.vue'
@@ -8,13 +9,10 @@ import ContactPage from '../pages/ContactPage.vue'
 import RegisterPage from '../pages/RegisterPage.vue'
 import LoginPage from '../pages/LoginPage.vue'
 
-// Sengaja pakai Hash History (URL jadi /#/tentang).
-// Alasannya: hosting murah/statis (GitHub Pages, Netlify tanpa config,
-// dibuka lewat Live Server / sub-folder) tidak punya fallback SPA,
-// sehingga History Mode bikin refresh di /tentang atau /panduan/3
-// melempar 404. Dengan hash, semua rute tetap jalan tanpa setting server.
+// Hash History digunakan untuk kompatibilitas penuh static hosting & sub-folder
 const routes = [
   { path: '/', name: 'home', component: HomePage, meta: { title: 'Beranda' } },
+  { path: '/kalkulator', name: 'kalkulator', component: KalkulatorPage, meta: { title: 'Kalkulator Faraid' } },
   { path: '/chat', name: 'chat', component: ChatPage, meta: { title: 'Chat Konsultasi', tanpaFooter: true } },
   { path: '/tentang', name: 'tentang', component: AboutPage, meta: { title: 'Tentang' } },
   { path: '/panduan', name: 'panduan', component: PanduanPage, meta: { title: 'Panduan Faraid' } },
@@ -40,7 +38,7 @@ const router = createRouter({
 })
 
 router.afterEach((to) => {
-  document.title = `${to.meta.title ?? 'WarisMu'} — WarisMu`
+  document.title = `${to.meta.title ?? 'WarisMu'} — Asisten Waris Islam`
 })
 
 export default router

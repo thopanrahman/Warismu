@@ -14,22 +14,19 @@ const props = defineProps({
 })
 defineEmits(['baru', 'pilih', 'hapus', 'tutup', 'cari'])
 
-// ===== Kartu user: Registered vs Guest (FR-20) =====
 const pengguna = computed(() => ambilPengguna())
 const inisial = computed(() => {
   const n = pengguna.value?.nama || '?'
   return n.trim().charAt(0).toUpperCase()
 })
-// UC-03 Logout: token & profil dibuang, riwayat tetap aman di server.
+
 function keluar() {
   keluarAkun()
   location.reload()
 }
 
-// ===== Pencarian sesi =====
 const kunciAktif = computed(() => props.kataKunci.trim().length > 0)
 
-// Pecah teks jadi potongan agar kata yang cocok bisa disorot.
 function sorot(teks) {
   const kunci = props.kataKunci.trim().toLowerCase()
   const isi = String(teks ?? '')
@@ -50,7 +47,6 @@ function sorot(teks) {
   return hasil
 }
 
-// Waktu terakhir sesi diperbarui: jam untuk hari ini, tanggal untuk hari lain.
 function waktu(t) {
   if (!t) return ''
   const d = new Date(t)
@@ -60,16 +56,9 @@ function waktu(t) {
     ? d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
     : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
 }
-function waktuLengkap(t) {
-  if (!t) return ''
-  return new Date(t).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
-}
 
-// ===== Pengelompokan & label waktu =====
-// Riwayat dari versi lama belum punya properti `waktu`. Data TIDAK dihapus —
-// hanya dikelompokkan & diberi label cadangan agar UI tidak terlihat rusak.
 const URUTAN_GRUP = ['Hari ini', 'Kemarin', 'Minggu lalu']
-const GRUP_CADANGAN = 'Percakapan Sebelumnya'
+const GRUP_CADANGAN = 'Sebelumnya'
 
 function grupDariWaktu(t) {
   const d = new Date(t)
@@ -85,15 +74,8 @@ function grupDariWaktu(t) {
   return 'Minggu lalu'
 }
 
-// Grup diturunkan dari stempel waktu. Tanpa stempel waktu (data lama) item tetap
-// tampil, hanya masuk grup cadangan — jadi tidak ada riwayat yang hilang.
 function grupDari(r) {
   return (r.waktu && grupDariWaktu(r.waktu)) || GRUP_CADANGAN
-}
-
-// Label waktu satu item: jam/tanggal, atau teks cadangan bila stempel waktu kosong.
-function labelWaktu(r) {
-  return waktu(r.waktu) || GRUP_CADANGAN
 }
 
 const kelompok = computed(() =>
@@ -105,218 +87,167 @@ const kelompok = computed(() =>
 
 <template>
   <div>
-    <!-- Overlay drawer (mobile): klik untuk menutup -->
+    <!-- Overlay drawer (mobile) -->
     <transition name="fade">
       <div
         v-if="terbuka"
-        class="fixed inset-0 z-40 bg-ink/40 backdrop-blur-[2px] md:hidden"
+        class="fixed inset-0 z-40 bg-forest-950/40 backdrop-blur-xs md:hidden"
         aria-hidden="true"
         @click="$emit('tutup')"
       ></div>
     </transition>
 
-    <!-- Pembungkus: menyusutkan lebar di desktop agar area chat melebar saat ditutup -->
+    <!-- Pembungkus Lebar Desktop -->
     <div
       class="shrink-0 w-0 overflow-hidden transition-[width] duration-300 ease-out md:h-full"
-      :class="terbuka ? 'md:w-72' : 'md:w-0'"
+      :class="terbuka ? 'md:w-80' : 'md:w-0'"
     >
       <aside
-        :id="'sidebar-riwayat'"
-        class="fixed inset-y-0 left-0 z-50 w-72 h-full bg-waris-950 text-waris-50 flex flex-col rounded-r-2xl md:rounded-2xl shadow-float transition-transform duration-300 ease-out md:static md:z-auto md:transition-none"
+        id="sidebar-riwayat"
+        class="fixed inset-y-0 left-0 z-50 w-80 h-full bg-forest-950 text-white flex flex-col rounded-r-2xl md:rounded-2xl shadow-float transition-transform duration-300 ease-out md:static md:z-auto md:transition-none border border-forest-900"
         :class="terbuka ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
         :aria-hidden="terbuka ? 'false' : 'true'"
-        :inert="terbuka ? null : true"
       >
-        <!-- Header -->
-        <div class="flex items-center justify-between gap-2 p-4">
-          <div class="flex items-center gap-3 min-w-0">
-            <BrandLogo class="w-9 h-9" />
-            <span class="font-display font-bold truncate">Riwayat</span>
+        <!-- Header Sidebar -->
+        <div class="flex items-center justify-between gap-2 p-4 border-b border-forest-900/60">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <BrandLogo class="w-8 h-8 brightness-110" />
+            <span class="font-display font-bold text-base tracking-tight truncate text-white">
+              Riwayat Konsultasi
+            </span>
           </div>
           <button
             type="button"
             title="Tutup sidebar"
             aria-label="Tutup sidebar"
-            aria-controls="sidebar-riwayat"
-            class="w-9 h-9 shrink-0 grid place-items-center rounded-full text-waris-100/70 hover:text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-300 transition-all duration-200"
+            class="w-8 h-8 grid place-items-center rounded-lg text-forest-300 hover:text-white hover:bg-white/10 transition-colors"
             @click="$emit('tutup')"
           >
             <PanelIcon arah="kiri" />
           </button>
         </div>
 
-        <div class="px-4">
+        <!-- Tombol Sesi Baru -->
+        <div class="p-3">
           <button
             type="button"
-            class="w-full h-11 inline-flex items-center justify-center gap-2 rounded-full bg-waris-500 hover:bg-waris-600 active:scale-95 text-white text-sm font-extrabold shadow-soft transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-200"
+            class="w-full h-11 px-4 rounded-xl bg-forest-800 hover:bg-forest-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-subtle active:scale-95"
             @click="$emit('baru')"
           >
-            <i class="fa-solid fa-plus"></i> Sesi Baru
+            <i class="fa-solid fa-plus text-xs"></i>
+            <span>Mulai Sesi Baru</span>
           </button>
         </div>
 
-        <!-- Pencarian sesi (kapsul) -->
-        <div class="px-4 pt-3">
-          <div class="relative" role="search">
-            <label for="cari-sesi" class="sr-only">Cari sesi percakapan</label>
-            <i
-              class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-xs text-waris-100/50"
-              aria-hidden="true"
-            ></i>
+        <!-- Pencarian Sesi -->
+        <div class="px-3 pb-2">
+          <div class="relative flex items-center">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 text-xs text-forest-400"></i>
             <input
-              id="cari-sesi"
+              type="text"
               :value="kataKunci"
-              type="search"
-              placeholder="Cari sesi…"
-              autocomplete="off"
-              class="w-full h-11 rounded-full bg-white/10 border border-white/10 pl-10 pr-11 text-sm font-semibold text-white placeholder:text-waris-100/45 outline-none transition-all duration-200 focus:bg-white/15 focus:border-waris-300/50 focus-visible:ring-2 focus-visible:ring-waris-300/60"
+              placeholder="Cari riwayat percakapan…"
+              class="w-full h-9 pl-9 pr-8 rounded-lg bg-forest-900/80 border border-forest-800 text-xs text-white placeholder:text-forest-400/80 outline-none focus:border-forest-500 focus:ring-1 focus:ring-forest-500 transition-all"
               @input="$emit('cari', $event.target.value)"
             />
             <button
-              v-if="kataKunci"
+              v-if="kunciAktif"
               type="button"
-              aria-label="Hapus kata kunci pencarian"
-              class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 grid place-items-center rounded-full text-waris-100/60 hover:text-white hover:bg-white/10 transition-colors duration-200"
+              class="absolute right-2.5 text-xs text-forest-400 hover:text-white"
+              title="Bersihkan pencarian"
               @click="$emit('cari', '')"
             >
-              <i class="fa-solid fa-xmark text-xs"></i>
+              <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
         </div>
 
-        <!-- Daftar riwayat (FR-29 mock) -->
-        <div class="flex-1 overflow-y-auto px-3 py-4 space-y-4" aria-live="polite">
-          <p v-if="kunciAktif && riwayat.length" class="px-2 text-[11px] font-bold text-waris-100/50">
-            {{ riwayat.length }} sesi cocok dengan “{{ kataKunci }}”
-          </p>
-
-          <div v-for="g in kelompok" :key="g.nama">
-            <p class="px-2 text-xs font-extrabold uppercase tracking-widest text-waris-100/40 mb-2">
-              {{ g.nama }}
-            </p>
-            <button
-              v-for="r in g.item"
-              :key="r.id"
-              type="button"
-              :title="waktu(r.waktu) ? 'Diperbarui ' + waktuLengkap(r.waktu) : GRUP_CADANGAN"
-              :aria-current="r.id === sesiAktifId ? 'true' : undefined"
-              class="w-full text-left px-3 py-3 rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-300"
-              :class="
-                r.id === sesiAktifId
-                  ? 'bg-white/15 text-white'
-                  : 'text-waris-100/70 hover:bg-white/10 hover:text-white'
-              "
-              @click="$emit('pilih', r)"
-            >
-              <span class="flex items-start gap-3">
-                <i class="fa-regular fa-message text-xs shrink-0 mt-1.5" aria-hidden="true"></i>
-                <span class="min-w-0 flex-1">
-                  <span class="flex items-baseline gap-2">
-                    <span class="min-w-0 flex-1 truncate text-sm font-bold">
-                      <template v-for="(bagian, i) in sorot(r.judul)" :key="i"
-                        ><mark
-                          v-if="bagian.cocok"
-                          class="bg-waris-300/40 text-white rounded px-0.5"
-                          >{{ bagian.teks }}</mark
-                        ><span v-else>{{ bagian.teks }}</span></template
-                      >
-                    </span>
-                    <span v-if="waktu(r.waktu)" class="shrink-0 text-[10px] font-bold text-waris-100/45">
-                      {{ waktu(r.waktu) }}
-                    </span>
-                  </span>
-                  <!-- Fallback data lama tanpa stempel waktu: label teks, bukan ruang kosong -->
-                  <span
-                    v-if="!waktu(r.waktu)"
-                    class="mt-0.5 block text-[10px] font-extrabold uppercase tracking-wider text-waris-100/40"
-                  >
-                    {{ labelWaktu(r) }}
-                  </span>
-                  <span
-                    v-if="r.cuplikan"
-                    class="mt-1 block text-xs leading-snug text-waris-100/55 line-clamp-2"
-                  >
-                    <template v-for="(bagian, i) in sorot(r.cuplikan)" :key="i"
-                      ><mark
-                        v-if="bagian.cocok"
-                        class="bg-waris-300/40 text-white rounded px-0.5"
-                        >{{ bagian.teks }}</mark
-                      ><span v-else>{{ bagian.teks }}</span></template
-                    >
-                  </span>
-                </span>
-              </span>
-            </button>
-          </div>
-
-          <!-- State: riwayat masih kosong -->
-          <div v-if="!riwayat.length && !kunciAktif" class="text-center text-xs text-waris-100/50 py-8">
-            <i class="fa-solid fa-folder-open text-2xl block mb-2" aria-hidden="true"></i>
-            Riwayat kosong.
-          </div>
-
-          <!-- State: pencarian tidak menemukan hasil -->
-          <div v-if="!riwayat.length && kunciAktif" class="text-center py-8">
-            <i class="fa-solid fa-magnifying-glass text-2xl block mb-2 text-waris-100/40" aria-hidden="true"></i>
-            <p class="text-sm font-extrabold text-waris-100/70">Sesi tidak ditemukan</p>
-            <p class="text-xs text-waris-100/45 mt-1">Coba kata kunci lain.</p>
-          </div>
-        </div>
-
-        <div class="p-3 border-t border-white/10 space-y-2">
-          <button
-            type="button"
-            :disabled="total === 0"
-            class="w-full text-xs font-bold flex items-center gap-2 px-3 py-2 rounded-lg transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-300"
-            :class="
-              total === 0
-                ? 'text-waris-100/25 cursor-not-allowed'
-                : 'text-waris-100/55 hover:text-danger-light hover:bg-white/5'
-            "
-            @click="$emit('hapus')"
-          >
-            <i class="fa-solid fa-trash-can" aria-hidden="true"></i> Hapus riwayat
-          </button>
-
-          <!-- Kartu user: Registered vs Guest (FR-20) -->
-          <div v-if="pengguna" class="bg-white/10 rounded-xl px-3 py-3">
-            <div class="flex items-center gap-3">
-              <span
-                class="w-9 h-9 rounded-full bg-waris-300 text-waris-950 grid place-items-center text-xs font-extrabold shrink-0"
-                >{{ inisial }}</span
-              >
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-extrabold truncate">{{ pengguna.nama }}</p>
-              </div>
+        <!-- Daftar Sesi Scrollable -->
+        <div class="flex-1 overflow-y-auto px-3 py-2 space-y-4">
+          <template v-if="riwayat.length">
+            <div v-for="grup in kelompok" :key="grup.nama" class="space-y-1">
+              <p class="px-2 text-[10px] font-extrabold uppercase tracking-wider text-forest-400">
+                {{ grup.nama }}
+              </p>
               <button
+                v-for="r in grup.item"
+                :key="r.id"
                 type="button"
-                aria-label="Keluar"
-                title="Keluar"
-                class="w-8 h-8 shrink-0 grid place-items-center rounded-full text-waris-100/60 hover:text-white hover:bg-white/10 transition-colors duration-200"
-                @click="keluar"
+                class="w-full text-left p-2.5 rounded-xl transition-all duration-150 flex flex-col gap-1"
+                :class="
+                  sesiAktifId === r.id
+                    ? 'bg-forest-800 text-white border border-forest-700'
+                    : 'text-forest-200 hover:bg-forest-900/60 hover:text-white'
+                "
+                @click="$emit('pilih', r)"
               >
-                <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="font-bold text-xs truncate">
+                    <template v-for="(p, i) in sorot(r.judul)" :key="i">
+                      <mark v-if="p.cocok" class="bg-forest-500 text-white rounded px-0.5">{{ p.teks }}</mark>
+                      <template v-else>{{ p.teks }}</template>
+                    </template>
+                  </span>
+                  <span class="text-[10px] text-forest-400 shrink-0 font-mono">
+                    {{ waktu(r.waktu) }}
+                  </span>
+                </div>
+                <p v-if="r.cuplikan" class="text-[11px] text-forest-300/80 line-clamp-1">
+                  {{ r.cuplikan }}
+                </p>
               </button>
             </div>
+          </template>
+
+          <!-- Empty State Pencarian / Riwayat Kosong -->
+          <div v-else class="text-center py-10 px-4 text-xs text-forest-400">
+            <i class="fa-solid fa-inbox text-2xl mb-2 text-forest-500/50"></i>
+            <p v-if="kunciAktif">Tidak ada riwayat yang cocok dengan kata kunci.</p>
+            <p v-else>Belum ada riwayat percakapan yang tersimpan.</p>
           </div>
-          <RouterLink
-            v-else
-            to="/masuk"
-            class="flex items-start gap-3 bg-white/10 hover:bg-white/15 rounded-xl px-3 py-3 transition-colors duration-200"
-            @click="$emit('tutup')"
+        </div>
+
+        <!-- Footer Akun & Hapus Riwayat -->
+        <div class="p-3 border-t border-forest-900/60 space-y-2">
+          <div
+            v-if="pengguna"
+            class="flex items-center justify-between p-2 rounded-xl bg-forest-900/80 border border-forest-800"
           >
-            <span
-              class="w-9 h-9 rounded-full bg-waris-500 text-white grid place-items-center text-xs shrink-0"
-            >
-              <i class="fa-solid fa-right-to-bracket"></i>
-            </span>
-            <span class="min-w-0">
-              <span class="block text-sm font-extrabold">Masuk / Daftar</span>
-              <span class="block text-[11px] font-semibold text-waris-100/55 mt-0.5 leading-snug">
-                Masuk agar riwayat konsultasi tersimpan.
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-7 h-7 rounded-full bg-forest-700 text-white text-xs font-bold grid place-items-center shrink-0">
+                {{ inisial }}
               </span>
-            </span>
-          </RouterLink>
+              <span class="text-xs font-bold text-white truncate">{{ pengguna.nama }}</span>
+            </div>
+            <button
+              type="button"
+              class="text-xs text-forest-300 hover:text-danger-light p-1"
+              title="Keluar"
+              @click="keluar"
+            >
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </button>
+          </div>
+
+          <div
+            v-else
+            class="p-2.5 rounded-xl bg-forest-900/60 border border-forest-800 text-[11px] text-forest-300"
+          >
+            <p class="font-bold text-white mb-0.5">Mode Tamu</p>
+            <p>Riwayat tidak disimpan ke server.</p>
+            <RouterLink to="/daftar" class="font-bold text-forest-200 underline mt-1 inline-block hover:text-white">
+              Daftar akun gratis &rarr;
+            </RouterLink>
+          </div>
+
+          <button
+            v-if="total > 0"
+            type="button"
+            class="w-full py-1.5 text-[11px] font-bold text-forest-400 hover:text-danger-light transition-colors text-center"
+            @click="$emit('hapus')"
+          >
+            <i class="fa-solid fa-trash-can mr-1"></i> Hapus Semua Riwayat
+          </button>
         </div>
       </aside>
     </div>

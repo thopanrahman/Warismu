@@ -1,7 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
-import { simpanLogin } from '../lib/akun.js'
+import { migrasiSesiTamu, simpanLogin } from '../lib/akun.js'
+import BrandLogo from '../components/BrandLogo.vue'
 
 const router = useRouter()
 const nama = ref('')
@@ -13,17 +14,16 @@ const sibuk = ref(false)
 
 const BATAS_WAKTU_API = 10_000
 const PESAN_KONEKSI = 'Gagal terhubung ke server. Coba lagi nanti.'
-// Minimal 8 karakter, wajib mengandung huruf dan angka.
 const SANDI_KUAT = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/
+
 const sandiTidakValid = computed(
   () => password.value.length > 0 && !SANDI_KUAT.test(password.value),
 )
 
-// UC-01 Registrasi Akun → POST /api/auth/register
 async function daftar() {
   galat.value = ''
   if (!nama.value.trim() || !/.+@.+\..+/.test(email.value)) {
-    galat.value = 'Isi nama dan email valid.'
+    galat.value = 'Silakan isi nama lengkap dan email yang valid.'
     return
   }
   if (!SANDI_KUAT.test(password.value)) {
@@ -32,7 +32,6 @@ async function daftar() {
   }
 
   sibuk.value = true
-  // Batas 10 detik: Supabase/API yang menggantung tidak boleh membuat spinner abadi.
   const kendali = new AbortController()
   const batas = setTimeout(() => kendali.abort(), BATAS_WAKTU_API)
 
@@ -47,16 +46,18 @@ async function daftar() {
     let data = {}
     try {
       data = await res.json()
-    } catch { /* respons kosong / bukan JSON */ }
+    } catch {
+      /* respons non-json */
+    }
 
     if (!res.ok) {
-      // 5xx = server/database bermasalah → pesan koneksi yang seragam.
       if (res.status >= 500) throw new Error(PESAN_KONEKSI)
-      throw new Error(data.error || 'Gagal mendaftar, coba lagi.')
+      throw new Error(data.error || 'Pendaftaran gagal, coba gunakan email lain.')
     }
     if (!data.token || !data.user) throw new Error(PESAN_KONEKSI)
 
     simpanLogin(data.token, data.user)
+    await migrasiSesiTamu(data.token)
     router.push('/chat')
   } catch (e) {
     const gagalKoneksi =
@@ -70,80 +71,110 @@ async function daftar() {
 </script>
 
 <template>
-  <div class="flex-1 flex items-center justify-center px-4 sm:px-6 py-10">
-    <div class="w-full max-w-md bg-cream border border-waris-900/10 rounded-lg shadow-soft p-6 sm:p-8">
-      <span class="w-14 h-14 rounded-full bg-waris-900 text-white grid place-items-center text-xl mx-auto">
-        <i class="fa-solid fa-user-plus"></i>
-      </span>
-      <h1 class="font-bold text-2xl text-center mt-3">Daftar Akun WarisMu</h1>
+  <div class="flex-1 flex items-center justify-center px-4 sm:px-6 py-12 sm:py-20 bg-canvas">
+    <div class="w-full max-w-md bg-white border border-forest-900/10 rounded-3xl shadow-card p-6 sm:p-8">
+      <div class="text-center mb-6">
+        <BrandLogo class="w-12 h-12 mx-auto mb-3" />
+        <h1 class="font-display font-bold text-2xl text-forest-950">Daftar Akun WarisMu</h1>
+        <p class="text-xs text-ink-500 mt-1">
+          Simpan riwayat konsultasi faraid dan akses kapan saja
+        </p>
+      </div>
 
-      <form class="mt-6 space-y-3" @submit.prevent="daftar">
-        <input
-          v-model="nama"
-          type="text"
-          placeholder="Nama lengkap"
-          autocomplete="name"
-          class="w-full h-12 px-5 rounded-lg bg-white/70 border border-waris-900/20 outline-none text-sm focus:ring-2 focus:ring-waris-900/30 placeholder:text-ink/35"
-        />
-        <input
-          v-model="email"
-          type="email"
-          placeholder="Email"
-          autocomplete="email"
-          class="w-full h-12 px-5 rounded-lg bg-white/70 border border-waris-900/20 outline-none text-sm focus:ring-2 focus:ring-waris-900/30 placeholder:text-ink/35"
-        />
-        <!-- Password + tombol lihat/sembunyikan -->
-        <div class="relative">
+      <!-- Migration benefit note -->
+      <div class="mb-5 p-3 rounded-xl bg-forest-50 border border-forest-900/10 text-[11px] text-forest-800 flex items-center gap-2">
+        <i class="fa-solid fa-cloud-arrow-up text-forest-700"></i>
+        <span>Konsultasi yang sedang berjalan otomatis tersimpan ke akun baru Anda.</span>
+      </div>
+
+      <form class="space-y-4" @submit.prevent="daftar">
+        <div>
+          <label for="regNama" class="block text-xs font-bold uppercase tracking-wider text-ink-700 mb-1.5">
+            Nama Lengkap
+          </label>
           <input
-            v-model="password"
-            :type="lihatSandi ? 'text' : 'password'"
-            placeholder="Password (min. 8 karakter, huruf + angka)"
-            autocomplete="new-password"
-            :aria-invalid="sandiTidakValid || undefined"
-            :aria-describedby="sandiTidakValid ? 'sandi-error' : undefined"
-            class="w-full h-12 pl-5 pr-14 rounded-lg bg-white/70 border outline-none text-sm focus:ring-2 placeholder:text-ink/35 transition-colors duration-200"
-            :class="
-              sandiTidakValid
-                ? 'border-danger focus:ring-danger/30'
-                : 'border-waris-900/20 focus:ring-waris-900/30'
-            "
+            id="regNama"
+            v-model="nama"
+            type="text"
+            placeholder="Contoh: Muhammad Ilham"
+            autocomplete="name"
+            class="w-full h-11 px-4 rounded-xl border border-forest-900/15 bg-canvas outline-none text-xs text-ink-900 focus:border-forest-800 focus:ring-2 focus:ring-forest-800/20 transition-all placeholder:text-ink-400"
           />
-          <button
-            type="button"
-            class="absolute right-1.5 top-1/2 -translate-y-1/2 w-10 h-10 grid place-items-center rounded-lg text-ink/45 hover:text-waris-900 hover:bg-waris-900/10 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-900/30"
-            :aria-label="lihatSandi ? 'Sembunyikan password' : 'Tampilkan password'"
-            :aria-pressed="lihatSandi"
-            :title="lihatSandi ? 'Sembunyikan password' : 'Tampilkan password'"
-            @click="lihatSandi = !lihatSandi"
-          >
-            <i :class="lihatSandi ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
-          </button>
         </div>
+
+        <div>
+          <label for="regEmail" class="block text-xs font-bold uppercase tracking-wider text-ink-700 mb-1.5">
+            Alamat Email
+          </label>
+          <input
+            id="regEmail"
+            v-model="email"
+            type="email"
+            placeholder="nama@email.com"
+            autocomplete="email"
+            class="w-full h-11 px-4 rounded-xl border border-forest-900/15 bg-canvas outline-none text-xs text-ink-900 focus:border-forest-800 focus:ring-2 focus:ring-forest-800/20 transition-all placeholder:text-ink-400"
+          />
+        </div>
+
+        <div>
+          <label for="regPassword" class="block text-xs font-bold uppercase tracking-wider text-ink-700 mb-1.5">
+            Password (Min. 8 Karakter)
+          </label>
+          <div class="relative">
+            <input
+              id="regPassword"
+              v-model="password"
+              :type="lihatSandi ? 'text' : 'password'"
+              placeholder="Kombinasi huruf dan angka"
+              autocomplete="new-password"
+              class="w-full h-11 pl-4 pr-11 rounded-xl border bg-canvas outline-none text-xs text-ink-900 focus:ring-2 transition-all placeholder:text-ink-400"
+              :class="
+                sandiTidakValid
+                  ? 'border-danger-DEFAULT focus:border-danger-DEFAULT focus:ring-danger-DEFAULT/20'
+                  : 'border-forest-900/15 focus:border-forest-800 focus:ring-forest-800/20'
+              "
+            />
+            <button
+              type="button"
+              class="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 grid place-items-center text-ink-500 hover:text-forest-900 transition-colors"
+              :aria-label="lihatSandi ? 'Sembunyikan password' : 'Lihat password'"
+              @click="lihatSandi = !lihatSandi"
+            >
+              <i :class="lihatSandi ? 'fa-solid fa-eye-slash text-xs' : 'fa-solid fa-eye text-xs'"></i>
+            </button>
+          </div>
+          <p v-if="sandiTidakValid" class="text-[11px] text-danger-DEFAULT font-bold mt-1">
+            Password minimal 8 karakter, wajib kombinasi huruf dan angka.
+          </p>
+        </div>
+
+        <!-- Error notification -->
         <p
-          v-if="sandiTidakValid"
-          id="sandi-error"
-          class="text-xs font-bold text-danger mt-1 px-1"
+          v-if="galat"
+          class="text-xs font-bold text-danger-DEFAULT bg-danger-soft border border-danger-DEFAULT/20 rounded-xl px-4 py-2.5 flex items-center gap-2"
         >
-          <i class="fa-solid fa-circle-exclamation mr-1" aria-hidden="true"></i>
-          Password minimal 8 karakter, kombinasi huruf dan angka.
+          <i class="fa-solid fa-circle-exclamation shrink-0"></i>
+          <span>{{ galat }}</span>
         </p>
-        <p v-if="galat" class="text-xs font-bold text-danger bg-danger-soft border border-danger/25 rounded-lg px-4 py-3">
-          <i class="fa-solid fa-circle-exclamation mr-2"></i>{{ galat }}
-        </p>
+
         <button
           type="submit"
           :disabled="sibuk"
-          class="w-full h-12 rounded-lg bg-waris-900 text-white text-sm font-extrabold shadow-soft transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-wait"
+          class="w-full h-11 rounded-xl bg-forest-900 text-white text-xs font-bold shadow-subtle hover:bg-forest-800 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          <i v-if="sibuk" class="fa-solid fa-circle-notch fa-spin mr-2"></i>
-          {{ sibuk ? 'Mendaftarkan…' : 'Daftar Sekarang' }}
+          <i v-if="sibuk" class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+          <span>{{ sibuk ? 'Mendaftarkan…' : 'Daftar Sekarang' }}</span>
         </button>
       </form>
 
-      <p class="text-xs text-ink/55 font-semibold text-center mt-4">
-        Sudah punya akun?
-        <RouterLink to="/masuk" class="text-waris-900 font-extrabold hover:underline">Masuk di sini</RouterLink>
-      </p>
+      <div class="mt-6 pt-4 border-t border-forest-900/10 text-center">
+        <p class="text-xs text-ink-600">
+          Sudah memiliki akun?
+          <RouterLink to="/masuk" class="text-forest-900 font-bold hover:underline ml-1">
+            Masuk di sini
+          </RouterLink>
+        </p>
+      </div>
     </div>
   </div>
 </template>

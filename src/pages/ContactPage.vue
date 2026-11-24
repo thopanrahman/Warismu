@@ -1,70 +1,64 @@
 <script setup>
 import ContactForm from '../components/ContactForm.vue'
 
-// Informasi kontak (data hardcode — mock frontend).
-// Email memakai alamat kampus mahasiswa, kampus memakai nama institusi asli.
 const kanal = [
-  { ikon: 'fa-solid fa-envelope', judul: 'Email', nilai: 'warismu@gmail.com' },
-  { ikon: 'fa-brands fa-whatsapp', judul: 'WhatsApp', nilai: '+62 812-3456-7890' },
-  { ikon: 'fa-solid fa-location-dot', judul: 'Kampus', nilai: 'Institut Teknologi Kalimantan' },
+  { ikon: 'fa-solid fa-envelope', judul: 'Surat Elektronik', nilai: 'warismu@gmail.com' },
+  { ikon: 'fa-brands fa-whatsapp', judul: 'WhatsApp Bantuan', nilai: '+62 812-3456-7890' },
+  { ikon: 'fa-solid fa-location-dot', judul: 'Afiliasi Kampus', nilai: 'Institut Teknologi Kalimantan' },
 ]
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 sm:pt-16 pb-24 sm:pb-28">
-    <!-- Judul halaman: label kecil + judul dua baris, di tengah -->
-    <div class="text-center max-w-3xl mx-auto">
-      <span
-        class="inline-flex items-center gap-2 rounded-full bg-waris-100 border border-waris-900/10 px-4 py-2 text-xs font-extrabold tracking-widest text-waris-900 uppercase"
-      >
-        <i class="fa-solid fa-envelope"></i> Kontak
-      </span>
-      <h1
-        class="font-display mt-6 text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.06] text-waris-950"
-      >
-        Ada Pertanyaan?<span class="block">Sampaikan Saran</span>
-      </h1>
-    </div>
+  <div class="w-full bg-canvas py-10 sm:py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Header Editorial -->
+      <div class="max-w-3xl mb-12">
+        <span class="text-xs font-bold uppercase tracking-wider text-forest-800">
+          Layanan & Bantuan
+        </span>
+        <h1 class="font-display text-3xl sm:text-5xl font-bold text-forest-950 mt-2 tracking-tight leading-[1.12]">
+          Ada Pertanyaan atau Masukan Syariat?
+        </h1>
+        <p class="mt-4 text-base sm:text-lg text-ink-600 leading-relaxed">
+          Kami senantiasa terbuka menerima pertanyaan, diskusi kasus faraid, maupun koreksi rujukan hukum demi penyempurnaan platform WarisMu.
+        </p>
+      </div>
 
-    <!-- Konten utama: info kontak (kiri, lebih sempit) + formulir (kanan, lebih lebar) -->
-    <div class="grid gap-6 lg:grid-cols-5 items-start mt-14 sm:mt-16">
-      <!-- Kolom kiri -->
-      <div class="lg:col-span-2 grid gap-4">
-        <div
-          v-for="k in kanal"
-          :key="k.judul"
-          class="bg-white rounded-2xl border border-waris-900/10 shadow-soft p-5 flex items-center gap-4 hover:-translate-y-1 hover:border-waris-900/20 transition-all duration-300"
-        >
-          <span
-            class="w-12 h-12 shrink-0 rounded-full bg-waris-100 text-waris-900 grid place-items-center text-lg"
+      <!-- Dua Kolom: Info Kontak & Formulir -->
+      <div class="grid gap-8 lg:grid-cols-12 items-start">
+        <!-- Kolom Kiri: Info Kanal (5 Kolom) -->
+        <div class="lg:col-span-5 space-y-4">
+          <div
+            v-for="k in kanal"
+            :key="k.judul"
+            class="p-5 rounded-2xl bg-white border border-forest-900/10 shadow-card flex items-center gap-4 hover:border-forest-900/25 transition-all"
           >
-            <i :class="k.ikon"></i>
-          </span>
-          <div class="min-w-0">
-            <p class="text-xs font-extrabold uppercase tracking-widest text-waris-900/60">
-              {{ k.judul }}
+            <span class="w-12 h-12 rounded-xl bg-forest-50 text-forest-900 grid place-items-center text-lg shrink-0">
+              <i :class="k.ikon"></i>
+            </span>
+            <div class="min-w-0">
+              <p class="text-[11px] font-bold uppercase tracking-wider text-ink-500">{{ k.judul }}</p>
+              <p class="font-bold text-sm text-forest-950 mt-0.5 break-words">{{ k.nilai }}</p>
+            </div>
+          </div>
+
+          <!-- Jam Kerja / Layanan -->
+          <div class="p-6 rounded-2xl bg-forest-950 text-white shadow-float space-y-2">
+            <div class="flex items-center gap-2 text-forest-300 text-xs font-bold uppercase tracking-wider">
+              <i class="fa-solid fa-clock"></i>
+              <span>Waktu Operasional</span>
+            </div>
+            <p class="font-display font-bold text-lg text-white">Senin - Jumat, 09.00 - 17.00 WITA</p>
+            <p class="text-xs text-forest-200/80 leading-relaxed">
+              Pesan dan pertanyaan yang masuk di luar jam operasional akan ditanggapi pada hari kerja berikutnya.
             </p>
-            <p class="font-bold text-sm text-waris-950 mt-0.5 break-words">{{ k.nilai }}</p>
           </div>
         </div>
 
-        <!-- Kartu jam kerja: panel hijau tua -->
-        <div class="bg-waris-950 text-white rounded-2xl shadow-soft p-6">
-          <span
-            class="w-12 h-12 rounded-full bg-white/10 text-waris-200 grid place-items-center text-lg"
-          >
-            <i class="fa-solid fa-clock"></i>
-          </span>
-          <p class="font-display font-bold text-xl mt-4">Jam Kerja</p>
-          <p class="text-sm text-waris-50/80 leading-relaxed mt-2">
-            Senin–Jumat, 09.00–17.00 WITA. Pesan di luar jam kerja dibalas hari kerja berikutnya.
-          </p>
+        <!-- Kolom Kanan: Form Kontak (7 Kolom) -->
+        <div class="lg:col-span-7">
+          <ContactForm />
         </div>
-      </div>
-
-      <!-- Kolom kanan -->
-      <div class="lg:col-span-3">
-        <ContactForm />
       </div>
     </div>
   </div>

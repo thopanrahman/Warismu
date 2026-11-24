@@ -393,11 +393,3 @@ export const daftarPanduan = [
   },
 ]
 
-export const daftarKategori = [
-  'Semua',
-  'Dasar',
-  'Ahli Waris',
-  'Perhitungan',
-  'Lanjutan',
-  'Prosedur',
-]

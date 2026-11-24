@@ -10,8 +10,7 @@ defineEmits(['laporkan'])
 const tersalin = ref(false)
 let timerSalin = null
 
-// Salin teks jawaban AI. Clipboard API butuh HTTPS/localhost; sediakan fallback
-// untuk browser lama agar tombol tetap berguna saat demo.
+// Salin teks jawaban AI
 async function salinTeks() {
   const teks = String(props.bubble.teks ?? '')
   if (!teks) return
@@ -48,93 +47,112 @@ onUnmounted(() => clearTimeout(timerSalin))
 </script>
 
 <template>
-  <!-- Bubble USER: kanan, hijau waris (DESIGN.md §4.2) -->
-  <div v-if="bubble.peran === 'user'" class="flex justify-end">
+  <!-- Bubble USER: Kanan, Deep Forest Green -->
+  <div v-if="bubble.peran === 'user'" class="flex justify-end my-3">
     <div
-      class="max-w-[85%] sm:max-w-[75%] bg-waris-900 text-white rounded-xl rounded-tr-none px-5 py-3 text-sm leading-relaxed shadow-soft whitespace-pre-line"
+      class="max-w-[88%] sm:max-w-[75%] bg-forest-900 text-white rounded-2xl rounded-tr-sm px-5 py-3.5 text-sm leading-relaxed shadow-subtle whitespace-pre-line"
     >
       {{ bubble.teks }}
     </div>
   </div>
 
-  <!-- Bubble BOT: kiri, waris-50 (DESIGN.md §4.2) + avatar -->
-  <div v-else class="flex justify-start gap-3">
-    <BrandLogo class="w-9 h-9" />
+  <!-- Bubble BOT: Kiri, Clean White Card + Logo -->
+  <div v-else class="flex justify-start gap-3 my-3">
+    <BrandLogo class="w-8 h-8 sm:w-9 sm:h-9 shrink-0 mt-1" />
     <div
-      class="max-w-[90%] sm:max-w-[80%] bg-waris-50 text-ink rounded-xl rounded-tl-none px-5 py-4 shadow-soft"
+      class="max-w-[94%] sm:max-w-[85%] bg-white text-ink-900 border border-forest-900/10 rounded-2xl rounded-tl-sm p-5 sm:p-6 shadow-card space-y-4"
     >
-      <!-- Tanda jujur: balasan ini dibuat tanpa AI / tanpa mesin hitung -->
-      <p
+      <!-- Mode mock notice bila AI menggunakan fallback offline -->
+      <div
         v-if="bubble.mock"
-        class="mb-3 inline-flex items-center gap-2 rounded-full bg-danger-soft border border-danger/30 px-3 py-1 text-[11px] font-extrabold text-danger"
+        class="inline-flex items-center gap-2 rounded-lg bg-dalil-50 border border-dalil-200 px-3 py-1.5 text-xs font-bold text-dalil-700"
       >
-        <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
-        Mode mock — bukan hasil Gemini
-      </p>
-
-      <p class="text-sm text-ink/80 leading-relaxed whitespace-pre-line">{{ bubble.teks }}</p>
-
-      <!-- Hasil simulasi: grid div (data tabular TANPA elemen tabel, sesuai aturan dosen) -->
-      <div v-if="bubble.hasil" class="mt-4 rounded-lg border border-waris-900/15 overflow-hidden">
-        <p class="bg-waris-900 text-white text-xs font-extrabold px-4 py-3">
-          <i class="fa-solid fa-calculator mr-2"></i>{{ bubble.hasil.judul }}
-        </p>
-        <div class="divide-y divide-waris-900/10 text-sm">
-          <div
-            v-for="b in bubble.hasil.bagian"
-            :key="b.nama"
-            class="grid grid-cols-[1fr_auto] gap-2 items-center px-4 py-3 bg-white/60"
-          >
-            <div>
-              <p class="font-extrabold text-ink text-sm">{{ b.nama }}</p>
-              <p class="text-xs text-ink/50 font-bold">{{ b.porsi }}</p>
-            </div>
-            <p class="font-extrabold text-waris-900 text-sm whitespace-nowrap">{{ b.nominal }}</p>
-          </div>
-        </div>
-        <p class="px-4 py-3 text-xs text-ink/55 bg-waris-100 font-semibold">{{ bubble.hasil.catatan }}</p>
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        <span>Mode tanggap cadangan lokal (simulasi edukasi)</span>
       </div>
 
-      <!-- Sumber hukum otomatis (FR-11) -->
-      <p v-if="bubble.sumber" class="mt-3 text-xs text-ink/55 bg-white/60 border border-waris-900/10 rounded-lg px-4 py-3">
-        <i class="fa-solid fa-book mr-2 text-waris-900"></i><strong>Sumber:</strong> {{ bubble.sumber }}
+      <!-- Teks Jawaban Naratif AI -->
+      <p class="text-sm text-ink-800 leading-relaxed whitespace-pre-line font-normal">
+        {{ bubble.teks }}
       </p>
 
-      <!-- FR-12: blok disclaimer sengaja TIDAK ditampilkan (permintaan pemilik produk).
-           Datanya tetap ikut tersimpan di bubble.disclaimer, jadi bisa dinyalakan lagi
-           cukup dengan mengembalikan blok <p> di bawah ini. -->
-      <!-- <p v-if="bubble.disclaimer">…</p> -->
+      <!-- Hasil Perhitungan Tabular / Rich Card -->
+      <div v-if="bubble.hasil" class="mt-4">
+        <template v-if="Array.isArray(bubble.hasil.bagian) && bubble.hasil.bagian.length">
+          <div class="rounded-xl border border-forest-900/15 overflow-hidden bg-canvas/50 p-4">
+            <p class="text-xs font-bold uppercase tracking-wider text-forest-900 mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-calculator text-forest-700"></i>
+              {{ bubble.hasil.judul || 'Simulasi Perhitungan Faraid' }}
+            </p>
 
-      <!-- Aksi bubble AI: laporan (bila ada hasil) + salin teks -->
-      <div class="mt-3 flex items-center justify-end gap-2">
+            <div class="space-y-2">
+              <div
+                v-for="b in bubble.hasil.bagian"
+                :key="b.nama"
+                class="flex items-center justify-between p-3 rounded-lg bg-white border border-forest-900/10 text-xs"
+              >
+                <div>
+                  <p class="font-bold text-ink-900">{{ b.nama }}</p>
+                  <p class="text-ink-500 font-mono text-[11px]">{{ b.porsi }}</p>
+                </div>
+                <p class="font-bold text-forest-900 font-mono text-sm whitespace-nowrap">
+                  {{ b.nominal }}
+                </p>
+              </div>
+            </div>
+
+            <p v-if="bubble.hasil.catatan" class="mt-3 text-[11px] text-ink-500 italic">
+              {{ bubble.hasil.catatan }}
+            </p>
+          </div>
+        </template>
+      </div>
+
+      <!-- Sumber Hukum -->
+      <div
+        v-if="bubble.sumber"
+        class="text-xs text-ink-600 bg-forest-50/70 border border-forest-900/10 rounded-xl px-4 py-2.5 flex items-center gap-2.5"
+      >
+        <i class="fa-solid fa-book-quran text-forest-700 text-sm"></i>
+        <span><strong>Dasar Hukum:</strong> {{ bubble.sumber }}</span>
+      </div>
+
+      <!-- Disclaimer Syariat -->
+      <div
+        v-if="bubble.disclaimer"
+        class="text-xs text-ink-700 bg-dalil-50/80 border border-dalil-200/80 rounded-xl px-4 py-3 leading-relaxed flex items-start gap-2.5"
+      >
+        <i class="fa-solid fa-circle-exclamation text-dalil-600 mt-0.5 shrink-0 text-sm"></i>
+        <div>
+          <strong class="font-bold text-ink-900">Perhatian:</strong> {{ bubble.disclaimer }}
+        </div>
+      </div>
+
+      <!-- Action Footer: Laporkan & Salin -->
+      <div class="pt-2 border-t border-forest-900/10 flex items-center justify-end gap-2">
         <button
           v-if="bubble.hasil"
           type="button"
-          class="text-xs font-extrabold rounded-lg px-3 py-2 border transition-all duration-300 active:scale-95"
-          :class="bubble.dilapor
-            ? 'bg-waris-900/10 border-waris-900/20 text-waris-900'
-            : 'border-waris-900/15 text-ink/45 hover:text-waris-900 hover:border-waris-800'"
+          class="text-xs font-bold rounded-lg px-3 py-1.5 border transition-all duration-200 active:scale-95"
+          :class="
+            bubble.dilapor
+              ? 'bg-forest-100 border-forest-300 text-forest-900'
+              : 'border-forest-900/15 text-ink-500 hover:text-forest-900 hover:bg-forest-50'
+          "
           @click="$emit('laporkan', bubble.id)"
         >
-          <i class="fa-solid fa-flag mr-2"></i>{{ bubble.dilapor ? 'Dilaporkan ✓' : 'Laporkan' }}
+          <i class="fa-solid fa-flag mr-1.5 text-xs"></i>
+          <span>{{ bubble.dilapor ? 'Dilaporkan' : 'Laporkan' }}</span>
         </button>
 
-        <!-- Copy kecil di sudut kanan bawah; berubah jadi centang selama 2 detik -->
         <button
           type="button"
-          class="w-8 h-8 grid place-items-center rounded-lg border transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-waris-900/30"
-          :class="tersalin
-            ? 'bg-waris-900/10 border-waris-900/20 text-waris-900'
-            : 'border-waris-900/15 text-ink/45 hover:text-waris-900 hover:border-waris-800'"
-          :aria-label="tersalin ? 'Teks jawaban disalin' : 'Salin teks jawaban AI'"
-          :title="tersalin ? 'Tersalin' : 'Salin teks'"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-forest-900/15 text-xs font-bold text-ink-600 hover:text-forest-900 hover:bg-forest-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-900/30"
+          :title="tersalin ? 'Tersalin ke clipboard' : 'Salin teks jawaban'"
           @click="salinTeks"
         >
-          <i
-            :class="tersalin ? 'fa-solid fa-check' : 'fa-regular fa-copy'"
-            class="text-xs"
-            aria-hidden="true"
-          ></i>
+          <i :class="tersalin ? 'fa-solid fa-check text-forest-700' : 'fa-regular fa-copy'" class="text-xs"></i>
+          <span>{{ tersalin ? 'Tersalin' : 'Salin Jawaban' }}</span>
         </button>
       </div>
     </div>

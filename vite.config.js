@@ -122,7 +122,7 @@ function apiLokalDev() {
         const tanda = (kunci) => (process.env[kunci] ? 'terisi' : 'KOSONG')
         logger.info('  API lokal: /api/chat + /api/auth/* + /api/riwayat + /api/laporan aktif')
         logger.info(
-          `  Kunci api : GEMINI ${tanda('GEMINI_API_KEY')} | DEEPSEEK ${tanda('DEEPSEEK_API_KEY')} | OPENAI ${tanda('OPENAI_API_KEY')}`,
+          `  Kunci api : GEMINI ${tanda('GEMINI_API_KEY')} | DEEPSEEK ${tanda('DEEPSEEK_API_KEY')} | OPENROUTER ${tanda('OPENROUTER_API_KEY')} | NVIDIA ${tanda('NVIDIA_API_KEY')} | OPENAI ${tanda('OPENAI_API_KEY')}`,
         )
         logger.info(
           `  Lainnya   : DATABASE_URL ${tanda('DATABASE_URL')} | JWT_SECRET ${tanda('JWT_SECRET')}`,
