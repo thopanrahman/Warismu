@@ -35,6 +35,10 @@ function ringkasPesan(p) {
   return {
     peran: p.peran,
     teks: p.teks,
+    tanya_lanjutan: Array.isArray(p.tanya_lanjutan) ? p.tanya_lanjutan : [],
+    data_saat_ini: p.data_saat_ini ?? null,
+    selesai: Boolean(p.selesai),
+    mode: p.mode ?? null,
     hasil: p.hasil ?? null,
     sumber: p.sumber ?? null,
     disclaimer: p.disclaimer ?? null,
@@ -208,16 +212,17 @@ async function mintaJawaban(isi) {
     })
     if (!res.ok) throw new Error('HTTP ' + res.status)
     const data = await res.json()
-    let teks = data.balas || 'Maaf, saya tidak mendapat jawaban. Silakan ulangi.'
-    if (data.tanya_lanjutan?.length && !data.selesai) {
-      teks += '\n\n' + data.tanya_lanjutan.map((t, i) => `${i + 1}. ${t}`).join('\n')
-    }
+    const teks = data.balas || 'Maaf, saya tidak mendapat jawaban. Silakan ulangi.'
     const mock = data.dipakaiMock === true
     daftarPesan.push({
       id: ++idCounter,
       peran: 'bot',
       dilapor: false,
       teks,
+      tanya_lanjutan: Array.isArray(data.tanya_lanjutan) ? data.tanya_lanjutan : [],
+      data_saat_ini: data.data_saat_ini ?? null,
+      selesai: Boolean(data.selesai),
+      mode: data.mode ?? null,
       hasil: data.hasil ?? null,
       sumber: data.sumber,
       disclaimer: data.disclaimer,
@@ -307,32 +312,6 @@ function saatEscape(e) {
   }
   const layarKecil = window.matchMedia('(max-width: 767px)').matches
   if (layarKecil && sidebarTerbuka.value) sidebarTerbuka.value = false
-}
-
-// Starter conversation cards
-const starterCards = [
-  {
-    judul: 'Keluarga Inti dengan Harta',
-    teks: 'Ayah wafat meninggalkan ibu, istri, 2 anak laki-laki dan 1 perempuan. Total harta 150 juta rupiah.',
-  },
-  {
-    judul: 'Hak Waris Istri Tanpa Anak',
-    teks: 'Berapa bagian waris istri jika almarhum suami tidak meninggalkan anak maupun cucu?',
-  },
-  {
-    judul: 'Kedudukan Anak Angkat',
-    teks: 'Apakah anak angkat berhak mendapatkan warisan dalam hukum faraid Islam?',
-  },
-  {
-    judul: 'Kewajiban Sebelum Pembagian',
-    teks: 'Apa saja kewajiban yang wajib ditunaikan sebelum harta peninggalan dibagi kepada ahli waris?',
-  },
-]
-
-function pilihStarter(teks) {
-  pesanBaru.value = teks
-  autoResize()
-  kirimPesan()
 }
 
 onMounted(() => {
@@ -504,82 +483,53 @@ async function hapusSemua() {
         </button>
       </div>
 
-      <!-- EMPTY STATE: Sapaan Tenang + 4 Starter Cards + Input di Tengah -->
+      <!-- EMPTY STATE: Sapaan Tenang + Input di Tengah -->
       <div
         v-if="belumMulai && !sedangMengetik"
-        class="flex-1 overflow-y-auto flex flex-col items-center justify-center px-4 sm:px-6 py-8 max-w-3xl mx-auto w-full text-center"
+        class="flex-1 overflow-y-auto px-4 sm:px-6 py-8 flex flex-col"
       >
-        <BrandLogo class="w-14 h-14 mb-4" />
-        <h2 class="font-display font-bold text-2xl sm:text-3xl text-forest-950 leading-tight">
-          Assalamualaikum. Ada yang bisa WarisMu bantu seputar pembagian waris?
-        </h2>
-        <p class="text-sm text-ink-600 mt-2 max-w-lg leading-relaxed">
-          Ceritakan kondisi keluarga Anda secara bebas dalam bahasa sehari-hari, atau pilih salah satu contoh pertanyaan di bawah ini.
-        </p>
-
-        <!-- Mode Tamu Indicator -->
-        <div
-          v-if="!sudahMasuk"
-          class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-forest-50 border border-forest-900/10 text-xs font-semibold text-forest-800"
-        >
-          <i class="fa-solid fa-user-clock text-xs"></i>
-          <span>Mode Tamu (riwayat tidak disimpan).</span>
-          <RouterLink to="/daftar" class="underline font-bold text-forest-900" @click="simpanMigrasiChat">
-            Daftar akun gratis &rarr;
-          </RouterLink>
-        </div>
-
-        <!-- 4 Starter Scenario Cards -->
-        <div class="grid sm:grid-cols-2 gap-3 mt-8 w-full text-left">
-          <button
-            v-for="s in starterCards"
-            :key="s.judul"
-            type="button"
-            class="p-4 rounded-xl border border-forest-900/10 bg-white hover:bg-forest-50/70 hover:border-forest-900/25 transition-all duration-200 active:scale-[0.98] shadow-subtle group"
-            @click="pilihStarter(s.teks)"
-          >
-            <p class="font-bold text-xs text-forest-900 group-hover:text-forest-700 flex items-center justify-between">
-              <span>{{ s.judul }}</span>
-              <i class="fa-solid fa-arrow-right text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
-            </p>
-            <p class="text-xs text-ink-600 mt-1 line-clamp-2 leading-relaxed">
-              {{ s.teks }}
-            </p>
-          </button>
-        </div>
-
-        <!-- Central Input Area -->
-        <div class="w-full mt-6">
-          <div
-            class="flex items-end gap-2 bg-white border border-forest-900/20 rounded-2xl p-2 pl-4 shadow-card focus-within:ring-2 focus-within:ring-forest-900/30 transition-all"
-          >
-            <textarea
-              ref="inputRef"
-              v-model="pesanBaru"
-              rows="1"
-              placeholder="Ceritakan kondisi keluarga atau tanyakan hukum waris…"
-              class="flex-1 min-w-0 bg-transparent resize-none outline-none text-sm py-2.5 max-h-32 text-ink-900 placeholder:text-ink-400"
-              @input="autoResize"
-              @keydown.enter.exact.prevent="kirimPesan()"
-            ></textarea>
-            <button
-              type="button"
-              aria-label="Kirim pesan konsultasi"
-              :disabled="kirimNonaktif"
-              class="w-11 h-11 shrink-0 rounded-xl grid place-items-center text-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-900/40"
-              :class="
-                kirimNonaktif
-                  ? 'bg-forest-900/30 opacity-50 cursor-not-allowed'
-                  : 'bg-forest-900 hover:bg-forest-800 active:scale-95 shadow-subtle'
-              "
-              @click="kirimPesan()"
-            >
-              <i class="fa-solid fa-arrow-up text-sm"></i>
-            </button>
-          </div>
-          <p class="text-[11px] text-ink-500 mt-2.5">
-            Tekan Enter untuk kirim • Shift+Enter untuk baris baru.
+        <div class="my-auto flex flex-col items-center max-w-2xl mx-auto w-full text-center">
+          <BrandLogo class="w-14 h-14 mb-4 shrink-0" />
+          <h2 class="font-display font-bold text-2xl sm:text-3xl text-forest-950 leading-tight">
+            Assalamualaikum. Ada yang bisa WarisMu bantu seputar pembagian waris?
+          </h2>
+          <p class="text-sm text-ink-600 mt-2 max-w-lg leading-relaxed">
+            Ceritakan kondisi keluarga Anda secara bebas dalam bahasa sehari-hari, atau tanyakan hal seputar hukum waris Islam.
           </p>
+
+          <!-- Central Input Area -->
+          <div class="w-full mt-7">
+            <div
+              class="flex items-end gap-2 bg-white border border-forest-900/20 rounded-2xl p-2 pl-4 shadow-card focus-within:ring-2 focus-within:ring-forest-900/30 transition-all"
+            >
+              <textarea
+                ref="inputRef"
+                v-model="pesanBaru"
+                rows="1"
+                placeholder="Ceritakan kondisi keluarga atau tanyakan hukum waris…"
+                class="flex-1 min-w-0 bg-transparent resize-none outline-none text-sm py-2.5 max-h-32 text-ink-900 placeholder:text-ink-400"
+                @input="autoResize"
+                @keydown.enter.exact.prevent="kirimPesan()"
+              ></textarea>
+              <button
+                type="button"
+                aria-label="Kirim pesan konsultasi"
+                :disabled="kirimNonaktif"
+                class="w-11 h-11 shrink-0 rounded-xl grid place-items-center text-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-900/40"
+                :class="
+                  kirimNonaktif
+                    ? 'bg-forest-900/30 opacity-50 cursor-not-allowed'
+                    : 'bg-forest-900 hover:bg-forest-800 active:scale-95 shadow-subtle'
+                "
+                @click="kirimPesan()"
+              >
+                <i class="fa-solid fa-arrow-up text-sm"></i>
+              </button>
+            </div>
+            <p class="text-[11px] text-ink-500 mt-2.5 leading-relaxed">
+              Hasil simulasi bersifat edukatif berdasarkan hukum faraid &amp; KHI, bukan fatwa atau putusan hukum resmi. Konsultasikan ke ahli faraid atau Pengadilan Agama.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -587,7 +537,13 @@ async function hapusSemua() {
       <template v-else>
         <!-- Daftar Pesan Chat -->
         <div ref="areaPesan" class="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4">
-          <ChatBubble v-for="b in daftarPesan" :key="b.id" :bubble="b" @laporkan="laporkan" />
+          <ChatBubble
+            v-for="b in daftarPesan"
+            :key="b.id"
+            :bubble="b"
+            @laporkan="laporkan"
+            @kirim-lanjut="kirimPesan"
+          />
 
           <!-- Typing indicator -->
           <div v-if="sedangMengetik" class="flex justify-start gap-3" role="status">
@@ -598,33 +554,6 @@ async function hapusSemua() {
               <span class="w-2 h-2 rounded-full bg-forest-700 animate-bounce" style="animation-delay: 300ms"></span>
               <span class="text-xs text-ink-500 font-medium ml-1">WarisMu sedang menelaah…</span>
             </div>
-          </div>
-        </div>
-
-        <!-- Banner Tamu saat chat berjalan -->
-        <div
-          v-if="!sudahMasuk"
-          class="mx-4 sm:mx-6 mb-2 py-2 px-3.5 rounded-xl bg-forest-50 border border-forest-900/10 flex flex-wrap items-center justify-between gap-2 text-xs text-forest-800"
-        >
-          <span class="inline-flex items-center gap-1.5 font-medium">
-            <i class="fa-solid fa-cloud-arrow-up text-forest-700"></i>
-            <span>Mode tamu: Masuk atau daftar agar konsultasi ini tersimpan ke riwayat akun.</span>
-          </span>
-          <div class="flex items-center gap-2 font-bold shrink-0">
-            <RouterLink
-              to="/masuk"
-              class="px-2.5 py-1 rounded bg-white hover:bg-forest-100 text-forest-900 border border-forest-900/15"
-              @click="simpanMigrasiChat"
-            >
-              Masuk
-            </RouterLink>
-            <RouterLink
-              to="/daftar"
-              class="px-2.5 py-1 rounded bg-forest-900 text-white hover:bg-forest-800"
-              @click="simpanMigrasiChat"
-            >
-              Daftar
-            </RouterLink>
           </div>
         </div>
 
@@ -657,6 +586,9 @@ async function hapusSemua() {
               <i class="fa-solid fa-arrow-up text-xs"></i>
             </button>
           </div>
+          <p class="text-[11px] text-ink-500 mt-2 text-center leading-relaxed">
+            Hasil simulasi bersifat edukatif berdasarkan hukum faraid &amp; KHI, bukan fatwa atau putusan hukum resmi. Konsultasikan ke ahli faraid atau Pengadilan Agama.
+          </p>
         </div>
       </template>
     </section>

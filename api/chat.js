@@ -83,24 +83,30 @@ function labelAhliWaris(nama) {
 
 function deteksiPertanyaanEdukasi(teks) {
   const t = String(teks || '').toLowerCase()
-  const kataKunci = [
+  const kataKasus = [
+    'meninggal',
+    'wafat',
+    'almarhum',
+    'almarhumah',
+    'hitung',
+    'simulasi',
+    'bagi waris',
+    'pembagian waris',
+    'dapet berapa',
+    'dapat berapa',
+    'bagiannya berapa',
+    'juta',
+    'miliar',
+  ]
+  const kataIstilahKhusus = [
     'apa itu',
-    'jelaskan',
-    'beda',
-    'perbedaan',
-    'apa yang dimaksud',
-    'maksud dari',
     'pengertian',
     'definisi',
-    'bagaimana hukum',
-    'hukum waris',
-    'siapa saja ahli',
-    'siapa yang berhak',
-    'mengapa',
-    'kenapa',
-    'apa arti',
-    'apa maksud',
-    'bagaimana cara',
+    'apa yang dimaksud',
+    'maksud dari',
+    'perbedaan',
+    'anak angkat',
+    'kewajiban sebelum',
     'rukun waris',
     'syarat waris',
     'dzawil furudh',
@@ -113,6 +119,17 @@ function deteksiPertanyaanEdukasi(teks) {
     'musytarakah',
     'munasakhat',
     'kalalah',
+  ]
+  if (kataIstilahKhusus.some((k) => t.includes(k))) return true
+  if (kataKasus.some((k) => t.includes(k))) return false
+
+  const kataKunci = [
+    'jelaskan',
+    'beda',
+    'mengapa',
+    'kenapa',
+    'apa arti',
+    'apa maksud',
   ]
   return kataKunci.some((k) => t.includes(k))
 }
@@ -207,14 +224,21 @@ function responsBelumCukup(data) {
   return {
     balas:
       data.balas ||
-      'Agar simulasi akurat, saya perlu beberapa data tambahan tentang pewaris, ahli waris, dan harta.',
+      'Agar simulasi akurat, silakan lengkapi beberapa data keluarga dan harta di bawah ini.',
     tanya_lanjutan: data.tanya_lanjutan?.length
       ? data.tanya_lanjutan
       : [
-          'Siapa saja ahli waris yang masih hidup?',
+          'Apakah pasangan (istri/suami) masih hidup?',
+          'Berapa jumlah anak laki-laki dan anak perempuan?',
+          'Apakah ayah atau ibu kandung masih hidup?',
           'Berapa total harta bersih setelah hutang & wasiat?',
-          'Apakah ada hutang atau wasiat pewaris?',
         ],
+    data_saat_ini: {
+      ahli_waris: data.ahli_waris || {},
+      harta_total: data.harta_total || 0,
+      hutang: data.hutang || 0,
+      wasiat: data.wasiat || 0,
+    },
     hasil: null,
     sumber: SUMBER_DEFAULT,
     disclaimer: DISCLAIMER_DEFAULT,

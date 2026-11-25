@@ -40,7 +40,7 @@ function aktif(path) {
 
 const tautan = [
   { path: '/', label: 'Beranda' },
-  { path: '/kalkulator', label: 'Kalkulator Faraid', badge: 'Fitur Utama' },
+  { path: '/kalkulator', label: 'Kalkulator Faraid' },
   { path: '/chat', label: 'Konsultasi AI' },
   { path: '/panduan', label: 'Panduan' },
   { path: '/tentang', label: 'Tentang' },
